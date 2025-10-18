@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Graus Maçônicos</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .section { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        form label { display: block; margin: 10px 0 5px; font-weight: bold; }
+        form input[type="text"], form input[type="number"] { 
+             width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; 
+        }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button.delete { background-color: #dc3545; margin-left: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <div id="app-content-internal"> 
+        
+        <a href="index.html" style="text-decoration: none;"><button style="background-color: #555;">← Voltar ao Menu</button></a>
+        <div class="section">
+            <h2>Gestão de Graus Maçônicos</h2>
+
+            <form id="form-grau">
+                <label for="numero-grau">Número/Ordem do Grau:</label>
+                <input type="number" id="numero-grau" required min="1" value="1"> 
+                
+                <label for="nome-grau">Nome do Grau:</label>
+                <input type="text" id="nome-grau" required>
+                
+                <button type="submit">Adicionar Grau</button>
+            </form>
+
+            <h3>Graus Cadastrados</h3>
+            <table id="tabela-graus">
+                <thead>
+                    <tr><th>Nº</th><th>Nome do Grau</th><th>Ações</th></tr> 
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+    <script>
+        // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
+          authDomain: "gestao-maconica.firebaseapp.com",
+          projectId: "gestao-maconica",
+          storageBucket: "gestao-maconica.firebasestorage.app",
+          messagingSenderId: "57851106083",
+          appId: "1:57851106083:web:0572445f0f856d223477296",
+          measurementId: "G-F1ZZ7XB7DQ"
+        };
+
+        // Inicializa o Firebase e Referências
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); 
+        const auth = firebase.auth();
+
+        let graus = [];
+        
+        // --- FUNÇÕES DE GESTÃO DE GRAUS ---
+
+        // Carregar Graus do Firebase (Ordena por 'numero')
+        function carregarGraus() {
+            db.collection("graus").orderBy("numero", "asc").onSnapshot((snapshot) => {
+                graus = [];
+                snapshot.forEach((doc) => {
+                    graus.push({ id: doc.id, ...doc.data() });
+                });
+                exibirGraus();
+            }, (error) => {
+                console.error("Erro ao carregar graus: ", error);
+            });
+        }
+
+        // Exibir Graus na Tabela
+        function exibirGraus() {
+            const tbody = document.getElementById('tabela-graus').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; 
+            
+            graus.forEach(g => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = g.numero; 
+                row.insertCell().textContent = g.nome;
+                
+                const cellAcoes = row.insertCell(); 
+                const btnExcluir = document.createElement('button');
+                btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'delete';
+                btnExcluir.onclick = () => excluirGrau(g.id, g.nome);
+                
+                cellAcoes.appendChild(btnExcluir);
+            });
+        }
+
+        // Adicionar Novo Grau (AGORA COM .then().catch() PARA DIAGNÓSTICO)
+        document.getElementById('form-grau').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nome = document.getElementById('nome-grau').value.trim();
+            const numero = parseInt(document.getElementById('numero-grau').value, 10); 
+
+            if (graus.some(g => g.nome.toLowerCase() === nome.toLowerCase())) {
+                alert('Erro: Este Grau já está cadastrado!');
+                return;
+            }
+            if (isNaN(numero) || numero < 1) {
+                alert('Erro: O número do Grau deve ser um valor válido.');
+                return;
+            }
+
+            // Tenta adicionar ao Firebase
+            db.collection("graus").add({ nome: nome, numero: numero }) 
+                .then(() => {
+                    alert(`Grau ${numero} - "${nome}" cadastrado com sucesso!`);
+                    this.reset();
+                })
+                .catch((error) => {
+                    // CATCH DEFINITIVO PARA PEGAR QUALQUER ERRO E REPORTAR NO CONSOLE
+                    if (error.code === 'permission-denied') {
+                         console.error("ERRO GRAVE FIREBASE: Permissão negada. REGRAS INVÁLIDAS.", error);
+                         alert("ERRO: Falha de Permissão. Verifique se as regras do Firebase estão 'if true'!");
+                    } else {
+                         console.error("ERRO GERAL DE SALVAMENTO: ", error);
+                         alert("Erro ao salvar. Veja o console (F12) para o código de erro.");
+                    }
+                });
+        });
+
+        // Excluir Grau
+        function excluirGrau(grauId, nomeGrau) {
+            if (!confirm(`Tem certeza que deseja EXCLUIR o Grau "${nomeGrau}"? Isso afetará os Irmãos que o utilizam!`)) {
+                return;
+            }
+
+            db.collection("graus").doc(grauId).delete()
+                .then(() => {
+                    alert(`Grau "${nomeGrau}" excluído!`);
+                })
+                .catch((error) => {
+                    console.error("Erro ao remover o grau: ", error);
+                    alert(`Erro ao tentar excluir o Grau.`);
+                });
+        }
+        
+        // --- 4. INICIALIZAÇÃO DA PÁGINA (CHAMADA DIRETA, MODO TESTE) ---
+        
+        carregarGraus();
+
+    </script>
+</body>
+</html>

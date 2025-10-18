@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "public": "./",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+    // A secção "rewrites" foi REMOVIDA para permitir a navegação entre múltiplas páginas HTML.
+  }
+}

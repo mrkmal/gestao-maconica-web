@@ -35,6 +35,7 @@
             background-color: #007bff; color: white; padding: 10px 15px; 
             border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
         }
+        button.action-btn { margin: 5px; padding: 8px 12px; font-size: 0.9em; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
@@ -53,7 +54,7 @@
     </div>
 
     <div id="login-screen">
-        <h2>Acesso ao Sistema Maçônico - v.5</h2>
+        <h2>Acesso ao Sistema Maçônico</h2>
         <p>Use o botão "Criar Nova Conta" APENAS na primeira vez.</p>
         <form id="form-login">
             <label for="login-email">Email:</label>
@@ -72,7 +73,7 @@
         
         <button onclick="fazerLogout()" style="float: right; background-color: #333; margin-bottom: 20px;">Sair</button>
 
-        <h1>Sistema de Gestão Maçônica - Arquivo Único - v.5</h1>
+        <h1>Sistema de Gestão Maçônica - Arquivo Único</h1>
         
         <div style="margin-bottom: 20px;">
             <button onclick="showSection('menu')">Menu Principal</button>
@@ -123,7 +124,10 @@
                     <option value="">A carregar Graus...</option>
                 </select>
                 
-                <button type="submit">Cadastrar Irmão</button>
+                <input type="hidden" id="membro-id-edicao" value=""> 
+
+                <button type="submit" id="btn-cadastrar">Cadastrar Irmão</button>
+                <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" style="display:none; background-color:#6c757d;">Cancelar Edição</button>
             </form>
 
             <h3>Lista de Irmãos Cadastrados</h3>
@@ -214,6 +218,7 @@
 
         /* --- 2. GESTÃO DE TELAS E NAVEGAÇÃO INTERNA --- */
 
+        // Função para mostrar a seção correta e esconder as outras
         function showSection(sectionId) {
             const sections = ['menu', 'graus', 'irmaos', 'sessoes', 'relatorios'];
             sections.forEach(id => {
@@ -227,6 +232,7 @@
             if (sectionId === 'irmaos') {
                 popularGrausDropdownMembro(); 
                 carregarMembros();
+                cancelarEdicao(); // Garante que o formulário está no modo Cadastro
             } else if (sectionId === 'sessoes') {
                 popularGrausDropdownSessao(); 
                 carregarMembrosESessoes();
@@ -240,7 +246,7 @@
             document.getElementById('initial-loading').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
             document.getElementById('login-screen').style.display = 'none';
-            showSection('menu'); 
+            showSection('menu'); // Inicia mostrando o menu
         }
 
         function mostrarLogin() {
@@ -298,6 +304,7 @@
                 const cellAcoes = row.insertCell(); 
                 const btnExcluir = document.createElement('button');
                 btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'action-btn';
                 btnExcluir.style.backgroundColor = '#dc3545';
                 btnExcluir.onclick = () => excluirGrau(g.id, g.nome);
                 cellAcoes.appendChild(btnExcluir);
@@ -321,7 +328,7 @@
         }
 
 
-        /* --- 5. MÓDULO DE CADASTRO DE IRMÃOS (SALVA NOME E NÚMERO DO GRAU) --- */
+        /* --- 5. MÓDULO DE CADASTRO DE IRMÃOS (AGORA COM EDIÇÃO DE GRAU) --- */
 
         function popularGrausDropdownMembro() {
             carregarGraus(); 
@@ -348,21 +355,64 @@
                 }
             });
         }
+        
+        // NOVO: Função para preencher o formulário com dados de edição
+        window.editarMembro = function(membroId) {
+            const membro = membros.find(m => m.id === membroId);
+            if (!membro) return;
 
+            // 1. Preenche os campos
+            document.getElementById('nome').value = membro.nome;
+            document.getElementById('matricula').value = membro.matricula;
+            // 2. Preenche o campo de grau (usa o numero_grau salvo)
+            document.getElementById('grau').value = membro.numero_grau || ''; 
+            
+            // 3. Define o ID no campo oculto para saber quem editar
+            document.getElementById('membro-id-edicao').value = membroId; 
+            
+            // 4. Muda a interface para MODO EDIÇÃO
+            document.getElementById('btn-cadastrar').textContent = 'Salvar Alterações';
+            document.getElementById('btn-cancelar').style.display = 'inline-block';
+        }
+        
+        // NOVO: Função para resetar a interface para MODO CADASTRO
+        window.cancelarEdicao = function() {
+            document.getElementById('form-membro').reset();
+            document.getElementById('membro-id-edicao').value = '';
+            document.getElementById('btn-cadastrar').textContent = 'Cadastrar Irmão';
+            document.getElementById('btn-cancelar').style.display = 'none';
+        }
+
+        // ALTERADO: O listener agora verifica se é cadastro ou edição
         document.getElementById('form-membro').addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            const membroId = document.getElementById('membro-id-edicao').value;
             const nome = document.getElementById('nome').value;
             const matricula = document.getElementById('matricula').value.trim();
-            
             const selectGrau = document.getElementById('grau');
             const numeroGrau = parseInt(selectGrau.value, 10); 
             const nomeGrau = selectGrau.options[selectGrau.selectedIndex].getAttribute('data-nome'); 
             
-            db.collection("membros").add({ matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau })
-                .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); this.reset(); })
-                .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
+            const dadosMembro = { matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau };
+
+            if (membroId) {
+                // SE HOUVER ID, CHAMA EDIÇÃO
+                db.collection("membros").doc(membroId).update(dadosMembro)
+                    .then(() => { 
+                        alert(`Irmão ${nome} atualizado (Novo Grau: ${nomeGrau})!`); 
+                        cancelarEdicao(); // Volta para o modo cadastro
+                    })
+                    .catch((error) => { alert("Erro ao atualizar o Irmão."); console.error(error); });
+            } else {
+                // CASO CONTRÁRIO, CHAMA CADASTRO
+                db.collection("membros").add(dadosMembro)
+                    .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); this.reset(); })
+                    .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
+            }
         });
         
+        // ALTERADO: Adiciona os botões EDITAR e EXCLUIR na tabela
         function exibirMembros() {
             const tbody = document.getElementById('tabela-membros').getElementsByTagName('tbody')[0];
             tbody.innerHTML = ''; 
@@ -371,9 +421,21 @@
                 row.insertCell().textContent = m.matricula;
                 row.insertCell().textContent = m.nome;
                 row.insertCell().textContent = m.nome_grau || m.grau || 'N/A';
+                
                 const cellAcoes = row.insertCell(); 
+                
+                // Botão EDITAR
+                const btnEditar = document.createElement('button');
+                btnEditar.textContent = 'Editar';
+                btnEditar.className = 'action-btn';
+                btnEditar.style.backgroundColor = '#17a2b8'; // Cor azul
+                btnEditar.onclick = () => editarMembro(m.id);
+                cellAcoes.appendChild(btnEditar);
+                
+                // Botão EXCLUIR
                 const btnExcluir = document.createElement('button');
                 btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'action-btn';
                 btnExcluir.style.backgroundColor = '#dc3545';
                 btnExcluir.onclick = () => excluirMembro(m.id, m.nome);
                 cellAcoes.appendChild(btnExcluir);
@@ -434,7 +496,6 @@
             
             // Filtra os membros com grau igual ou superior ao grau da sessão
             const membrosElegiveis = membros.filter(m => {
-                // Filtra pelo NUMERO_GRAU
                 return m.numero_grau && m.numero_grau >= grauRequerido;
             });
             

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão Maçônica - Completo</title>
+    <title>Menu Principal - Sistema Maçônico</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
@@ -13,10 +13,7 @@
         /* Estilos de layout e login */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
-        .section-content { 
-            background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-            margin-top: 20px; max-width: 900px; margin-left: auto; margin-right: auto;
-        }
+        /* Estilos do Botão de Menu */
         .menu-button { 
             display: block; width: 100%; padding: 15px; margin: 10px 0;
             background-color: #007bff; color: white; border: none; border-radius: 4px; 
@@ -27,7 +24,7 @@
             max-width: 400px; margin: 100px auto; padding: 20px; background-color: #fff; 
             border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
         }
-        form input[type="text"], form input[type="password"], form input[type="number"], form input[type="date"], form select { 
+        form input[type="text"], form input[type="password"] { 
             width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; 
             border-radius: 4px; box-sizing: border-box; display: block;
         }
@@ -35,15 +32,7 @@
             background-color: #007bff; color: white; padding: 10px 15px; 
             border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
         }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .tabela-frequencia td { text-align: center; }
-        
-        /* CSS que controla a visibilidade (Esconde o app e o login no carregamento) */
-        #main-content, #login-screen { 
-            display: none; 
-        }
+        #app-content, #login-screen { display: none; }
     </style>
 </head>
 <body>
@@ -53,7 +42,7 @@
     </div>
 
     <div id="login-screen">
-        <h2>Acesso ao Sistema Maçônico - v.3</h2>
+        <h2>Acesso ao Sistema Maçônico v.5</h2>
         <p>Use o botão "Criar Nova Conta" APENAS na primeira vez.</p>
         <form id="form-login">
             <label for="login-email">Email:</label>
@@ -68,123 +57,30 @@
         </form>
     </div>
 
-    <div id="main-content">
+    <div id="app-content" style="max-width: 600px; margin: auto;">
         
         <button onclick="fazerLogout()" style="float: right; background-color: #333; margin-bottom: 20px;">Sair</button>
 
-        <h1>Sistema de Gestão Maçônica - Arquivo Único</h1>
+        <h1>Menu Principal do Sistema Maçônico</h1>
         
-        <div style="margin-bottom: 20px;">
-            <button onclick="showSection('menu')">Menu Principal</button>
-            <button onclick="showSection('graus')">Gestão de Graus</button>
-            <button onclick="showSection('irmaos')">Cadastro de Irmãos</button>
-            <button onclick="showSection('sessoes')">Registo de Sessões</button>
-            <button onclick="showSection('relatorios')">Relatórios</button>
-        </div>
-
-        <div id="menu-section" class="section-content">
-            <h2>Menu Principal</h2>
-            <p>Selecione uma opção para gerir os dados:</p>
-        </div>
-
-        <div id="graus-section" class="section-content" style="display:none;">
-            <h2>Gestão de Graus Maçônicos</h2>
-
-            <form id="form-grau">
-                <label for="numero-grau">Número/Ordem do Grau:</label>
-                <input type="number" id="numero-grau" required min="1" value="1"> 
-                
-                <label for="nome-grau">Nome do Grau:</label>
-                <input type="text" id="nome-grau" required>
-                
-                <button type="submit">Adicionar Grau</button>
-            </form>
-
-            <h3>Graus Cadastrados</h3>
-            <table id="tabela-graus">
-                <thead>
-                    <tr><th>Nº</th><th>Nome do Grau</th><th>Ações</th></tr> 
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        
-        <div id="irmaos-section" class="section-content" style="display:none;">
-            <h2>Cadastro de Irmãos</h2>
-            <form id="form-membro">
-                <label for="nome">Nome Completo:</label>
-                <input type="text" id="nome" required>
-                
-                <label for="matricula">Matrícula (Única):</label>
-                <input type="text" id="matricula" required>
-                
-                <label for="grau">Grau:</label>
-                <select id="grau">
-                    <option value="">A carregar Graus...</option>
-                </select>
-                
-                <button type="submit">Cadastrar Irmão</button>
-            </form>
-
-            <h3>Lista de Irmãos Cadastrados</h3>
-            <table id="tabela-membros">
-                <thead>
-                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Ações</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="sessoes-section" class="section-content" style="display:none;">
-            <h2>Registo de Sessão e Frequência</h2>
-            <form id="form-sessao">
-                <label for="data-sessao">Data da Sessão:</label>
-                <input type="date" id="data-sessao" required>
-                
-                <label for="tipo-sessao">Tipo/Nome da Sessão:</label>
-                <input type="text" id="tipo-sessao" required>
-                
-                <button type="submit">Criar Sessão e Marcar Frequência</button>
-            </form>
-
-            <div id="frequencia-form" style="display:none; margin-top: 20px;">
-                <h3>Marcar Frequência (Data: <span id="sessao-data-display"></span>)</h3>
-                <form id="form-frequencia">
-                    <table id="tabela-frequencia" class="tabela-frequencia">
-                        <thead>
-                            <tr><th>Nome do Irmão</th><th>Presença</th><th>Falta</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                    <button type="button" onclick="salvarFrequencia()">Salvar Frequência</button>
-                </form>
-            </div>
-
-            <h3>Sessões Registradas</h3>
-            <table id="tabela-sessoes">
-                <thead>
-                    <tr><th>Data</th><th>Tipo</th><th>Ações</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="relatorios-section" class="section-content" style="display:none;">
-            <h2>Relatórios de Frequência</h2>
+        <div class="container" style="display: block;">
             
-            <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
+            <h2>Gestão e Cadastros</h2>
+            <a href="/cad_graus.html" class="menu-button">Gerir Graus Maçônicos</a>
+            <a href="/cad_irmaos.html" class="menu-button">Cadastro de Irmãos</a>
+            <a href="/cad_sessoes.html" class="menu-button">Registo de Sessões e Frequência</a>
+
+            <hr style="margin: 30px 0;">
             
-            <table id="tabela-relatorio" style="margin-top: 20px;">
-                <thead>
-                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões</th><th>% Frequência</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+            <h2>Relatórios e Configuração</h2>
+            <a href="/relatorios.html" class="menu-button">Relatórios de Frequência</a>
+            <a href="#" class="menu-button" style="background-color: #ccc; color: #555; cursor: default;">Gestão de Usuários (Próximo Módulo)</a>
+        </div> 
 
+    </div>
 
-    </div> <script>
-        /* Documentação JavaScript: Lógica Completa e Consolidada */
+    <script>
+        /* Documentação JavaScript: Lógica de Autenticação e Menu */
         
         // --- 1. CONFIGURAÇÃO DO FIREBASE ---
         const firebaseConfig = {
@@ -198,52 +94,22 @@
         };
 
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
         const auth = firebase.auth(); 
 
-        let membros = [];
-        let graus = [];
-        let sessoes = [];
-        let sessaoAtualParaFrequencia = null;
+        /* --- 2. GESTÃO DE AUTENTICAÇÃO E NAVEGAÇÃO --- */
 
-
-        /* --- 2. GESTÃO DE TELAS E NAVEGAÇÃO INTERNA --- */
-
-        // Função para mostrar a seção correta e esconder as outras
-        function showSection(sectionId) {
-            const sections = ['menu', 'graus', 'irmaos', 'sessoes', 'relatorios'];
-            sections.forEach(id => {
-                const element = document.getElementById(id + '-section');
-                if (element) {
-                    element.style.display = (id === sectionId) ? 'block' : 'none';
-                }
-            });
-
-            // Ações específicas ao abrir a seção:
-            if (sectionId === 'irmaos') {
-                popularGrausEcarregarMembros(); // Atualiza dropdown e lista
-            } else if (sectionId === 'sessoes') {
-                carregarMembrosESessoes(); // Atualiza lista de sessões e prepara frequência
-            }
-        }
-
-        // Funções para exibição da tela principal
         function mostrarApp() {
             document.getElementById('initial-loading').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
+            document.getElementById('app-content').style.display = 'block';
             document.getElementById('login-screen').style.display = 'none';
-            showSection('menu'); // Inicia mostrando o menu
         }
 
         function mostrarLogin() {
             document.getElementById('initial-loading').style.display = 'none';
-            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('app-content').style.display = 'none';
             document.getElementById('login-screen').style.display = 'block';
         }
-
-
-        /* --- 3. MÓDULO DE AUTENTICAÇÃO --- */
-
+        
         function criarConta() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -265,248 +131,7 @@
             auth.signOut().then(() => { mostrarLogin(); }).catch((error) => { console.error('Erro:', error); });
         }
 
-
-        /* --- 4. MÓDULO DE GESTÃO DE GRAUS --- */
-
-        function carregarGraus() {
-            db.collection("graus").orderBy("numero", "asc").onSnapshot((snapshot) => {
-                graus = [];
-                snapshot.forEach((doc) => {
-                    graus.push({ id: doc.id, ...doc.data() });
-                });
-                if (document.getElementById('graus-section').style.display === 'block') {
-                    exibirGraus(); 
-                }
-            });
-        }
-
-        function exibirGraus() {
-            const tbody = document.getElementById('tabela-graus').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            graus.forEach(g => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = g.numero; 
-                row.insertCell().textContent = g.nome;
-                const cellAcoes = row.insertCell(); 
-                const btnExcluir = document.createElement('button');
-                btnExcluir.textContent = 'Excluir';
-                btnExcluir.style.backgroundColor = '#dc3545';
-                btnExcluir.onclick = () => excluirGrau(g.id, g.nome);
-                cellAcoes.appendChild(btnExcluir);
-            });
-        }
-        
-        document.getElementById('form-grau').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nome = document.getElementById('nome-grau').value.trim();
-            const numero = parseInt(document.getElementById('numero-grau').value, 10); 
-            db.collection("graus").add({ nome: nome, numero: numero }) 
-                .then(() => { alert(`Grau ${numero} - "${nome}" cadastrado!`); this.reset(); })
-                .catch((error) => { alert("Erro ao salvar o Grau. Verifique as regras!"); console.error(error); });
-        });
-
-        function excluirGrau(grauId, nomeGrau) {
-            if (!confirm(`Excluir o Grau "${nomeGrau}"?`)) return;
-            db.collection("graus").doc(grauId).delete()
-                .then(() => { alert(`Grau "${nomeGrau}" excluído!`); })
-                .catch((error) => { alert(`Erro ao tentar excluir!`); console.error(error); });
-        }
-
-
-        /* --- 5. MÓDULO DE CADASTRO DE IRMÃOS --- */
-
-        function popularGrausEcarregarMembros() {
-            carregarGraus(); 
-            
-            db.collection("graus").get().then((snapshot) => {
-                const selectGrau = document.getElementById('grau');
-                selectGrau.innerHTML = ''; 
-                snapshot.forEach((doc) => {
-                    const option = document.createElement('option');
-                    option.value = doc.data().nome;
-                    option.textContent = doc.data().nome;
-                    selectGrau.appendChild(option);
-                });
-                carregarMembros();
-            });
-        }
-
-        function carregarMembros() {
-            db.collection("membros").onSnapshot((snapshot) => {
-                membros = [];
-                snapshot.forEach((doc) => {
-                    membros.push({ id: doc.id, ...doc.data() });
-                });
-                if (document.getElementById('irmaos-section').style.display === 'block') {
-                    exibirMembros();
-                }
-            });
-        }
-
-        document.getElementById('form-membro').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nome = document.getElementById('nome').value;
-            const matricula = document.getElementById('matricula').value.trim();
-            const grau = document.getElementById('grau').value;
-            db.collection("membros").add({ matricula, nome, grau })
-                .then(() => { alert(`Irmão ${nome} cadastrado!`); this.reset(); })
-                .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
-        });
-        
-        function exibirMembros() {
-            const tbody = document.getElementById('tabela-membros').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            membros.forEach(m => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = m.matricula;
-                row.insertCell().textContent = m.nome;
-                row.insertCell().textContent = m.grau;
-                const cellAcoes = row.insertCell(); 
-                const btnExcluir = document.createElement('button');
-                btnExcluir.textContent = 'Excluir';
-                btnExcluir.style.backgroundColor = '#dc3545';
-                btnExcluir.onclick = () => excluirMembro(m.id, m.nome);
-                cellAcoes.appendChild(btnExcluir);
-            });
-        }
-        
-        function excluirMembro(membroId, nomeMembro) {
-             if (!confirm(`Excluir o irmão ${nomeMembro}?`)) return;
-             db.collection("membros").doc(membroId).delete().then(() => { alert(`Irmão ${nomeMembro} excluído!`); });
-        }
-
-
-        /* --- 6. MÓDULO DE REGISTO DE SESSÕES --- */
-
-        function carregarMembrosESessoes() {
-            carregarMembros(); // Garante que a lista 'membros' está atualizada
-            db.collection("sessoes").orderBy("data", "desc").onSnapshot((snapshot) => {
-                sessoes = [];
-                snapshot.forEach((doc) => { sessoes.push({ id: doc.id, ...doc.data() }); });
-                if (document.getElementById('sessoes-section').style.display === 'block') {
-                    exibirSessoes();
-                }
-            });
-        }
-        
-        document.getElementById('form-sessao').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const data = document.getElementById('data-sessao').value;
-            const tipo = document.getElementById('tipo-sessao').value;
-            sessaoAtualParaFrequencia = { data, tipo, frequencia: {} };
-            prepararFormularioFrequencia(sessaoAtualParaFrequencia);
-        });
-
-        function prepararFormularioFrequencia(sessao) {
-            if (membros.length === 0) { alert('Cadastre irmãos primeiro.'); return; }
-            document.getElementById('sessao-data-display').textContent = sessao.data + ' (' + sessao.tipo + ')';
-            const tbodyFrequencia = document.getElementById('tabela-frequencia').getElementsByTagName('tbody')[0];
-            tbodyFrequencia.innerHTML = ''; 
-
-            membros.forEach(m => {
-                const row = tbodyFrequencia.insertRow();
-                row.insertCell().textContent = m.nome;
-                const cellPresenca = row.insertCell();
-                const inputPresenca = document.createElement('input');
-                inputPresenca.type = 'radio'; inputPresenca.name = 'frequencia_' + m.matricula; inputPresenca.value = 'presente'; inputPresenca.checked = true;
-                cellPresenca.appendChild(inputPresenca);
-                const cellFalta = row.insertCell();
-                const inputFalta = document.createElement('input');
-                inputFalta.type = 'radio'; inputFalta.name = 'frequencia_' + m.matricula; inputFalta.value = 'ausente';
-                cellFalta.appendChild(inputFalta);
-            });
-
-            document.getElementById('frequencia-form').style.display = 'block';
-            document.getElementById('form-sessao').style.display = 'none';
-        }
-
-        function salvarFrequencia() {
-            const formFrequencia = document.getElementById('form-frequencia');
-            membros.forEach(m => {
-                const radios = formFrequencia.elements['frequencia_' + m.matricula];
-                sessaoAtualParaFrequencia.frequencia[m.matricula] = (radios.value === 'presente');
-            });
-
-            db.collection("sessoes").add(sessaoAtualParaFrequencia)
-                .then(() => { alert('Frequência salva!'); 
-                    document.getElementById('frequencia-form').style.display = 'none';
-                    document.getElementById('form-sessao').style.display = 'block';
-                    document.getElementById('form-sessao').reset();
-                })
-                .catch((error) => { console.error(error); alert("Erro ao salvar frequência."); });
-        }
-
-        function exibirSessoes() {
-            const tbody = document.getElementById('tabela-sessoes').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            sessoes.forEach(s => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = s.data;
-                row.insertCell().textContent = s.tipo;
-                row.insertCell().textContent = 'Completo'; 
-            });
-        }
-
-
-        /* --- 7. MÓDULO DE RELATÓRIOS --- */
-
-        function carregarDadosEGerarRelatorio() {
-            carregarMembros(); // Garante que a lista 'membros' está atualizada
-            
-            if (sessoes.length === 0) {
-                 alert('Não há sessões registradas para gerar o relatório.');
-                 return;
-            }
-            
-            const relatorio = {};
-            const totalSessoes = sessoes.length;
-
-            membros.forEach(m => {
-                relatorio[m.matricula] = { 
-                    matricula: m.matricula,
-                    nome: m.nome,
-                    grau: m.grau,
-                    presencas: 0 
-                };
-            });
-
-            sessoes.forEach(sessao => {
-                for (const matricula in sessao.frequencia) {
-                    if (sessao.frequencia[matricula] === true && relatorio[matricula]) {
-                        relatorio[matricula].presencas++;
-                    }
-                }
-            });
-
-            exibirRelatorio(relatorio, totalSessoes);
-        }
-
-        function exibirRelatorio(dadosRelatorio, totalSessoes) {
-            const tbody = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            
-            Object.values(dadosRelatorio).forEach(dados => {
-                const row = tbody.insertRow();
-                const percentagem = (dados.presencas / totalSessoes) * 100;
-
-                row.insertCell().textContent = dados.matricula;
-                row.insertCell().textContent = dados.nome;
-                row.insertCell().textContent = dados.grau || 'N/A';
-                row.insertCell().textContent = dados.presencas;
-                row.insertCell().textContent = totalSessoes;
-                row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
-            });
-
-            alert('Relatório de Frequência Gerado!');
-        }
-
-
-        /* --- 8. INICIALIZAÇÃO DA APLICAÇÃO --- */
-
-        // Event listener para garantir que a gestão de graus está ativa no carregamento
-        document.addEventListener('DOMContentLoaded', carregarGraus);
-
-        // Monitorizar o estado da autenticação (Garante o carregamento inicial)
+        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Garanti a checagem)
         auth.onAuthStateChanged((user) => {
             document.getElementById('initial-loading').style.display = 'none';
             if (user) {

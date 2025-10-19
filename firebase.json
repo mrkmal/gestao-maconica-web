@@ -5,7 +5,12 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
-    // A secção "rewrites" foi REMOVIDA para permitir a navegação entre múltiplas páginas HTML.
   }
 }

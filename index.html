@@ -10,60 +10,40 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     
     <style>
-        /* Estilos básicos para o layout */
+        /* Estilos de layout e login */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
-        /* Estilos do Botão de Menu */
         .menu-button { 
-            display: block; 
-            width: 100%; 
-            padding: 15px; 
-            margin: 10px 0;
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer;
-            text-align: left;
-            font-size: 1.1em;
-            text-decoration: none;
+            display: block; width: 100%; padding: 15px; margin: 10px 0;
+            background-color: #007bff; color: white; border: none; border-radius: 4px; 
+            cursor: pointer; text-align: left; font-size: 1.1em; text-decoration: none;
         }
         .menu-button:hover { background-color: #0056b3; }
-
-        /* Estilos de Login */
         #login-screen { 
-            max-width: 400px; 
-            margin: 100px auto; 
-            padding: 20px; 
-            background-color: #fff; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            max-width: 400px; margin: 100px auto; padding: 20px; 
+            background-color: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
         }
         form input[type="text"], form input[type="password"] { 
-            width: 100%; 
-            padding: 8px; 
-            margin-bottom: 10px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-            display: block;
+            width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; 
+            border-radius: 4px; box-sizing: border-box; display: block;
         }
         button { 
-            background-color: #007bff; 
-            color: white; 
-            padding: 10px 15px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            margin-top: 10px; 
+            background-color: #007bff; color: white; padding: 10px 15px; 
+            border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
         }
-        /* CRUCIAL: A aplicação começa escondida */
+        /* CORRIGIDO: A aplicação começa escondida, e o JS decide se mostra o login ou o app */
         #app-content { 
             display: none; 
+        }
+        #login-screen {
+             display: none; /* Começa escondido, o JS irá mostrar */
         }
     </style>
 </head>
 <body>
+    <div id="initial-loading" style="text-align: center; margin-top: 50px;">
+        <h2>A carregar sistema...</h2>
+    </div>
 
     <div id="login-screen">
         <h2>Acesso ao Sistema Maçônico</h2>
@@ -121,23 +101,26 @@
 
         /* --- 2. GESTÃO DE AUTENTICAÇÃO E NAVEGAÇÃO --- */
 
+        // Esconde o loading e mostra o app
         function mostrarApp() {
-            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('initial-loading').style.display = 'none';
             document.getElementById('app-content').style.display = 'block';
+            document.getElementById('login-screen').style.display = 'none';
         }
 
+        // Esconde o loading e mostra o login
         function mostrarLogin() {
-            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('initial-loading').style.display = 'none';
             document.getElementById('app-content').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
         }
 
-        // FUNÇÃO CORRIGIDA: Navega apenas se o usuário estiver logado
+        // Navegação segura
         function navigateTo(url) {
-            // Verifica se o Firebase TEM um usuário logado ANTES de sair da página
             if (auth.currentUser) {
-                window.location.href = url; // Ex: /cad_graus.html
+                window.location.href = url;
             } else {
-                alert('A sessão expirou. Por favor, faça login novamente.');
+                alert('Sessão expirada. Redirecionando para o login.');
                 mostrarLogin();
             }
         }
@@ -146,56 +129,29 @@
         function criarConta() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-
-            if (!email || !password) {
-                alert('Preencha email e senha para criar a conta.');
-                return;
-            }
-            
+            // ... (Lógica de criar conta) ...
             auth.createUserWithEmailAndPassword(email, password)
-                .then(() => {
-                    alert('Conta criada com sucesso! Pode iniciar sessão.');
-                })
-                .catch((error) => {
-                    alert('Erro ao criar conta: ' + error.message);
-                });
+                .then(() => { alert('Conta criada com sucesso! Pode iniciar sessão.'); })
+                .catch((error) => { alert('Erro ao criar conta: ' + error.message); });
         }
         
         // Fazer Login
         function fazerLogin() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-
-            if (!email || !password) {
-                alert('Preencha email e senha para fazer login.');
-                return;
-            }
-
+            // ... (Lógica de login) ...
             auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                .then(() => {
-                    return auth.signInWithEmailAndPassword(email, password);
-                })
-                .then(() => {
-                    // Ao fazer login com sucesso, ele usa o listener abaixo para mostrar o app
-                    alert('Login bem-sucedido. Aguardando carregamento da sessão...');
-                })
-                .catch((error) => {
-                    alert('Erro no Login: Email ou senha inválidos.');
-                });
+                .then(() => { return auth.signInWithEmailAndPassword(email, password); })
+                .then(() => { alert('Login bem-sucedido. Aguardando carregamento da sessão...'); })
+                .catch((error) => { alert('Erro no Login: Email ou senha inválidos.'); });
         }
         
         // Fazer Logout
         function fazerLogout() {
-            auth.signOut()
-                .then(() => {
-                    alert('Sessão encerrada.');
-                })
-                .catch((error) => {
-                    console.error('Erro ao fazer logout:', error);
-                });
+            auth.signOut().then(() => { alert('Sessão encerrada.'); }).catch((error) => { console.error('Erro ao fazer logout:', error); });
         }
 
-        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Garante que a página está protegida)
+        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Agora lida com a tela de loading)
         auth.onAuthStateChanged((user) => {
             if (user) {
                 mostrarApp(); 

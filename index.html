@@ -31,16 +31,15 @@
             background-color: #007bff; color: white; padding: 10px 15px; 
             border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
         }
-        /* CORRIGIDO: A aplicação começa escondida, e o JS decide se mostra o login ou o app */
-        #app-content { 
+        
+        /* CORRIGIDO: O carregamento inicial esconde tudo. */
+        #app-content, #login-screen { 
             display: none; 
-        }
-        #login-screen {
-             display: none; /* Começa escondido, o JS irá mostrar */
         }
     </style>
 </head>
 <body>
+    
     <div id="initial-loading" style="text-align: center; margin-top: 50px;">
         <h2>A carregar sistema...</h2>
     </div>
@@ -151,7 +150,8 @@
             auth.signOut().then(() => { alert('Sessão encerrada.'); }).catch((error) => { console.error('Erro ao fazer logout:', error); });
         }
 
-        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Agora lida com a tela de loading)
+        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação
+        // Esta função é o que garante que o login ou o menu são exibidos
         auth.onAuthStateChanged((user) => {
             if (user) {
                 mostrarApp(); 

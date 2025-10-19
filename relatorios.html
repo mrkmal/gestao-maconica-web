@@ -46,7 +46,6 @@
 <body>
 
     <a href="index.html" class="menu-button" style="margin-right: 10px;">← Voltar ao Menu</a>
-    <button class="menu-button" onclick="gerarRelatorioFrequencia()">Gerar Relatório de Frequência</button>
 
     <h2 style="margin-top: 20px;">Relatório de Frequência</h2>
     <table id="tabela-relatorio">
@@ -66,6 +65,7 @@
 
     <script>
         // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
+        
         const firebaseConfig = {
           apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
           authDomain: "gestao-maconica.firebaseapp.com",
@@ -82,10 +82,11 @@
         const auth = firebase.auth();
 
         // --- 2. LÓGICA DE AUTENTICAÇÃO E CHAMADA DA FUNÇÃO ---
+        
         auth.onAuthStateChanged(user => {
             if (user) {
-                console.log("Usuário logado. Gerando relatório...");
-                gerarRelatorioFrequencia(); 
+                console.log("Usuário logado. Carregando dados...");
+                carregarDadosEGerarRelatorio(); 
             } else {
                 console.log("Nenhum usuário logado.");
                 alert("Você precisa estar logado para ver os relatórios.");
@@ -94,7 +95,8 @@
         });
 
         // --- 3. FUNÇÃO PRINCIPAL PARA GERAR O RELATÓRIO ---
-        async function gerarRelatorioFrequencia() {
+        
+        async function carregarDadosEGerarRelatorio() {
             try {
                 // 1. Buscar todos os membros e sessões em paralelo
                 const [membrosSnapshot, sessoesSnapshot] = await Promise.all([

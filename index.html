@@ -1,11 +1,9 @@
-HTML
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Principal - Sistema Maçônico</title>
+    <title>Menu Principal - Sistema Maçônico - v.1</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
@@ -34,7 +32,7 @@ HTML
             border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
         }
         
-        /* CORRIGIDO: O carregamento inicial esconde tudo. */
+        /* CORREÇÃO CRÍTICA: Esconde o menu e o login por padrão */
         #app-content, #login-screen { 
             display: none; 
         }
@@ -82,7 +80,9 @@ HTML
             <a href="#" class="menu-button" style="background-color: #ccc; color: #555; cursor: default;">Gestão de Usuários (Próximo Módulo)</a>
         </div> 
 
-    </div> <script>
+    </div>
+
+    <script>
         /* Documentação JavaScript: Lógica de Autenticação e Menu */
         
         // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
@@ -143,7 +143,10 @@ HTML
             // ... (Lógica de login) ...
             auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
                 .then(() => { return auth.signInWithEmailAndPassword(email, password); })
-                .then(() => { alert('Login bem-sucedido. Aguardando carregamento da sessão...'); })
+                .then(() => { 
+                    alert('Login bem-sucedido. Aguardando carregamento da sessão...'); 
+                    // O listener auth.onAuthStateChanged trata de mostrar a tela
+                })
                 .catch((error) => { alert('Erro no Login: Email ou senha inválidos.'); });
         }
         
@@ -155,8 +158,10 @@ HTML
         // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Agora lida com a tela de loading)
         auth.onAuthStateChanged((user) => {
             if (user) {
+                // Usuário logado: mostra o menu
                 mostrarApp(); 
             } else {
+                // Usuário não logado: mostra o login
                 mostrarLogin(); 
             }
         });

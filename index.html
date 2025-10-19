@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão Maçônica - Completo</title>
+    <title>Sistema de Gestão Maçônica - Completo - v.2</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
@@ -40,7 +40,7 @@
         th { background-color: #f2f2f2; }
         .tabela-frequencia td { text-align: center; }
         
-        /* CORREÇÃO CRÍTICA: Esconde o app e o login por padrão */
+        /* CSS que controla a visibilidade (Esconde o app e o login no carregamento) */
         #main-content, #login-screen { 
             display: none; 
         }
@@ -219,11 +219,11 @@
                 }
             });
 
-            // Se for a seção de irmãos, força o carregamento dos dados dinâmicos
+            // Ações específicas ao abrir a seção:
             if (sectionId === 'irmaos') {
-                popularGrausEcarregarMembros();
+                popularGrausEcarregarMembros(); // Atualiza dropdown e lista
             } else if (sectionId === 'sessoes') {
-                carregarMembrosESessoes();
+                carregarMembrosESessoes(); // Atualiza lista de sessões e prepara frequência
             }
         }
 
@@ -241,280 +241,4 @@
             document.getElementById('login-screen').style.display = 'block';
         }
 
-        /* --- 3. MÓDULO DE AUTENTICAÇÃO --- */
-
-        function criarConta() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(() => { alert('Conta criada! Inicie sessão.'); })
-                .catch((error) => { alert('Erro: ' + error.message); });
-        }
-        
-        function fazerLogin() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                .then(() => { return auth.signInWithEmailAndPassword(email, password); })
-                .then(() => { alert('Login bem-sucedido!'); })
-                .catch((error) => { alert('Erro no Login: ' + error.message); });
-        }
-        
-        function fazerLogout() {
-            auth.signOut().then(() => { showSection('menu'); }).catch((error) => { console.error('Erro:', error); });
-        }
-
-
-        /* --- 4. MÓDULO DE GESTÃO DE GRAUS (MÓDULO 2) --- */
-
-        // Carregar Graus do Firebase (Usado para a tabela e para o dropdown de irmãos)
-        function carregarGraus() {
-            db.collection("graus").orderBy("numero", "asc").onSnapshot((snapshot) => {
-                graus = [];
-                snapshot.forEach((doc) => {
-                    graus.push({ id: doc.id, ...doc.data() });
-                });
-                // Chamadas específicas para este módulo:
-                if (document.getElementById('graus-section').style.display === 'block') {
-                    exibirGraus(); // Apenas exibe se estiver na seção
-                }
-            });
-        }
-
-        // Exibir Graus na Tabela
-        function exibirGraus() {
-            const tbody = document.getElementById('tabela-graus').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            graus.forEach(g => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = g.numero; 
-                row.insertCell().textContent = g.nome;
-                const cellAcoes = row.insertCell(); 
-                const btnExcluir = document.createElement('button');
-                btnExcluir.textContent = 'Excluir';
-                btnExcluir.style.backgroundColor = '#dc3545';
-                btnExcluir.onclick = () => excluirGrau(g.id, g.nome);
-                cellAcoes.appendChild(btnExcluir);
-            });
-        }
-        
-        // Adicionar Novo Grau
-        document.getElementById('form-grau').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nome = document.getElementById('nome-grau').value.trim();
-            const numero = parseInt(document.getElementById('numero-grau').value, 10); 
-            db.collection("graus").add({ nome: nome, numero: numero }) 
-                .then(() => { alert(`Grau ${numero} - "${nome}" cadastrado!`); this.reset(); })
-                .catch((error) => { alert("Erro ao salvar o Grau. Verifique as regras!"); console.error(error); });
-        });
-
-        function excluirGrau(grauId, nomeGrau) {
-            if (!confirm(`Excluir o Grau "${nomeGrau}"?`)) return;
-            db.collection("graus").doc(grauId).delete()
-                .then(() => { alert(`Grau "${nomeGrau}" excluído!`); })
-                .catch((error) => { alert(`Erro ao tentar excluir!`); console.error(error); });
-        }
-
-
-        /* --- 5. MÓDULO DE CADASTRO DE IRMÃOS (MÓDULO 3) --- */
-
-        // Carregar Graus para o Dropdown e depois carregar os Membros
-        function popularGrausEcarregarMembros() {
-            carregarGraus(); // Garante que a lista 'graus' está atualizada
-            
-            db.collection("graus").get().then((snapshot) => {
-                const selectGrau = document.getElementById('grau');
-                selectGrau.innerHTML = ''; 
-                snapshot.forEach((doc) => {
-                    const option = document.createElement('option');
-                    option.value = doc.data().nome;
-                    option.textContent = doc.data().nome;
-                    selectGrau.appendChild(option);
-                });
-                carregarMembros(); // Depois de carregar graus, carrega irmãos
-            });
-        }
-
-        function carregarMembros() {
-            db.collection("membros").onSnapshot((snapshot) => {
-                membros = [];
-                snapshot.forEach((doc) => {
-                    membros.push({ id: doc.id, ...doc.data() });
-                });
-                exibirMembros();
-            });
-        }
-
-        // Adicionar Novo Irmão
-        document.getElementById('form-membro').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nome = document.getElementById('nome').value;
-            const matricula = document.getElementById('matricula').value.trim();
-            const grau = document.getElementById('grau').value;
-            db.collection("membros").add({ matricula, nome, grau })
-                .then(() => { alert(`Irmão ${nome} cadastrado!`); this.reset(); })
-                .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
-        });
-        
-        function exibirMembros() {
-            const tbody = document.getElementById('tabela-membros').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            membros.forEach(m => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = m.matricula;
-                row.insertCell().textContent = m.nome;
-                row.insertCell().textContent = m.grau;
-                const cellAcoes = row.insertCell(); 
-                const btnExcluir = document.createElement('button');
-                btnExcluir.textContent = 'Excluir';
-                btnExcluir.style.backgroundColor = '#dc3545';
-                btnExcluir.onclick = () => excluirMembro(m.id, m.nome);
-                cellAcoes.appendChild(btnExcluir);
-            });
-        }
-        
-        function excluirMembro(membroId, nomeMembro) {
-             if (!confirm(`Excluir o irmão ${nomeMembro}?`)) return;
-             db.collection("membros").doc(membroId).delete().then(() => { alert(`Irmão ${nomeMembro} excluído!`); });
-        }
-
-
-        /* --- 6. MÓDULO DE REGISTO DE SESSÕES (MÓDULO 4) --- */
-
-        function carregarMembrosESessoes() {
-            carregarMembros(); // Garante que a lista 'membros' está atualizada
-            db.collection("sessoes").orderBy("data", "desc").onSnapshot((snapshot) => {
-                sessoes = [];
-                snapshot.forEach((doc) => { sessoes.push({ id: doc.id, ...doc.data() }); });
-                exibirSessoes();
-            });
-        }
-        
-        document.getElementById('form-sessao').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const data = document.getElementById('data-sessao').value;
-            const tipo = document.getElementById('tipo-sessao').value;
-            sessaoAtualParaFrequencia = { data, tipo, frequencia: {} };
-            prepararFormularioFrequencia(sessaoAtualParaFrequencia);
-        });
-
-        function prepararFormularioFrequencia(sessao) {
-            if (membros.length === 0) { alert('Cadastre irmãos primeiro.'); return; }
-            document.getElementById('sessao-data-display').textContent = sessao.data + ' (' + sessao.tipo + ')';
-            const tbodyFrequencia = document.getElementById('tabela-frequencia').getElementsByTagName('tbody')[0];
-            tbodyFrequencia.innerHTML = ''; 
-
-            membros.forEach(m => {
-                const row = tbodyFrequencia.insertRow();
-                row.insertCell().textContent = m.nome;
-                const cellPresenca = row.insertCell();
-                const inputPresenca = document.createElement('input');
-                inputPresenca.type = 'radio'; inputPresenca.name = 'frequencia_' + m.matricula; inputPresenca.value = 'presente'; inputPresenca.checked = true;
-                cellPresenca.appendChild(inputPresenca);
-                const cellFalta = row.insertCell();
-                const inputFalta = document.createElement('input');
-                inputFalta.type = 'radio'; inputFalta.name = 'frequencia_' + m.matricula; inputFalta.value = 'ausente';
-                cellFalta.appendChild(inputFalta);
-            });
-
-            document.getElementById('frequencia-form').style.display = 'block';
-            document.getElementById('form-sessao').style.display = 'none';
-        }
-
-        function salvarFrequencia() {
-            const formFrequencia = document.getElementById('form-frequencia');
-            membros.forEach(m => {
-                const radios = formFrequencia.elements['frequencia_' + m.matricula];
-                sessaoAtualParaFrequencia.frequencia[m.matricula] = (radios.value === 'presente');
-            });
-
-            db.collection("sessoes").add(sessaoAtualParaFrequencia)
-                .then(() => { alert('Frequência salva!'); 
-                    document.getElementById('frequencia-form').style.display = 'none';
-                    document.getElementById('form-sessao').style.display = 'block';
-                    document.getElementById('form-sessao').reset();
-                })
-                .catch((error) => { console.error(error); alert("Erro ao salvar frequência."); });
-        }
-
-        function exibirSessoes() {
-            const tbody = document.getElementById('tabela-sessoes').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            sessoes.forEach(s => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = s.data;
-                row.insertCell().textContent = s.tipo;
-                row.insertCell().textContent = 'Completo'; 
-            });
-        }
-
-
-        /* --- 7. MÓDULO DE RELATÓRIOS (MÓDULO 5) --- */
-
-        function carregarDadosEGerarRelatorio() {
-            // Garante que os arrays 'membros' e 'sessoes' estão atualizados
-            carregarMembros(); 
-            
-            // Aguardar que a lista de sessões esteja carregada (usamos o array sessoes do Módulo 6)
-            if (sessoes.length === 0) {
-                 alert('Não há sessões registradas.');
-                 return;
-            }
-            
-            const relatorio = {};
-            const totalSessoes = sessoes.length;
-
-            membros.forEach(m => {
-                relatorio[m.matricula] = { ...m, presencas: 0 };
-            });
-
-            // Conta as presenças
-            sessoes.forEach(sessao => {
-                for (const matricula in sessao.frequencia) {
-                    if (sessao.frequencia[matricula] === true && relatorio[matricula]) {
-                        relatorio[matricula].presencas++;
-                    }
-                }
-            });
-
-            exibirRelatorio(relatorio, totalSessoes);
-        }
-
-        function exibirRelatorio(dadosRelatorio, totalSessoes) {
-            const tbody = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
-            
-            Object.values(dadosRelatorio).forEach(dados => {
-                const row = tbody.insertRow();
-                const percentagem = (dados.presencas / totalSessoes) * 100;
-
-                row.insertCell().textContent = dados.matricula;
-                row.insertCell().textContent = dados.nome;
-                row.insertCell().textContent = dados.grau;
-                row.insertCell().textContent = dados.presencas;
-                row.insertCell().textContent = totalSessoes;
-                row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
-            });
-
-            alert('Relatório de Frequência Gerado!');
-        }
-
-
-        /* --- 8. INICIALIZAÇÃO DA APLICAÇÃO --- */
-
-        // Event listener para garantir que a gestão de graus está ativa no carregamento
-        document.addEventListener('DOMContentLoaded', carregarGraus);
-
-        // Monitorizar o estado da autenticação (Garante o carregamento inicial)
-        auth.onAuthStateChanged((user) => {
-            document.getElementById('initial-loading').style.display = 'none';
-            if (user) {
-                mostrarApp(); 
-            } else {
-                mostrarLogin(); 
-            }
-        });
-        
-    </script>
-</body>
-</html>
+        /*

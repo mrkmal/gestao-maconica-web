@@ -3,69 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatórios - Sistema Maçônico</title>
+    <title>Relatórios de Frequência</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     
     <style>
-        /* Estilos básicos para o layout */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
-        /* Estilos do Botão de Menu */
-        .menu-button { 
-            display: inline-block; 
-            padding: 10px 15px; 
-            margin: 10px 0;
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            font-size: 1em;
-        }
-        .menu-button:hover { background-color: #0056b3; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+        .section { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
 
-    <a href="index.html" class="menu-button" style="margin-right: 10px;">← Voltar ao Menu</a>
+    <a href="/index.html" style="text-decoration: none;"><button style="background-color: #555;">← Voltar ao Menu</button></a>
+    <div class="section">
+        <h1>Relatórios de Frequência</h1>
 
-    <h2 style="margin-top: 20px;">Relatório de Frequência</h2>
-    <table id="tabela-relatorio">
-        <thead>
-            <tr>
-                <th>Matrícula</th>
-                <th>Nome</th>
-                <th>Presenças</th>
-                <th>Total de Sessões</th>
-                <th>% Frequência</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Os dados serão inseridos aqui via JavaScript -->
-        </tbody>
-    </table>
+        <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
+            
+        <table id="tabela-relatorio" style="margin-top: 20px;">
+            <thead>
+                <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões</th><th>% Frequência</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
-        
+        // --- 1. CONFIGURAÇÃO DO FIREBASE ---
         const firebaseConfig = {
           apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
           authDomain: "gestao-maconica.firebaseapp.com",
@@ -76,97 +47,93 @@
           measurementId: "G-F1ZZ7XB7DQ"
         };
 
-        // Inicializa o Firebase e as Referências
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const auth = firebase.auth();
+        const auth = firebase.auth(); 
 
-        // --- 2. LÓGICA DE AUTENTICAÇÃO E CHAMADA DA FUNÇÃO ---
+        let membros = [];
+        let sessoes = [];
         
-        auth.onAuthStateChanged(user => {
+        // --- FUNÇÕES DE RELATÓRIO ---
+
+        function carregarDadosParaRelatorio() {
+            // Busca todos os membros
+            db.collection("membros").get().then((snapshotMembros) => {
+                membros = [];
+                snapshotMembros.forEach((doc) => {
+                    membros.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Busca todas as sessões
+                db.collection("sessoes").get().then((snapshotSessoes) => {
+                    sessoes = [];
+                    snapshotSessoes.forEach((doc) => { sessoes.push({ id: doc.id, ...doc.data() }); });
+                    // Garante que o relatório só é gerado depois que os dados chegam
+                    if (membros.length > 0 && sessoes.length > 0) {
+                         gerarRelatorio();
+                    } else if (membros.length > 0 && sessoes.length === 0) {
+                        alert('Nenhum registro de sessão para calcular.');
+                        document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0].innerHTML = '<tr><td colspan="6">Nenhuma sessão registrada.</td></tr>';
+                    } else {
+                        alert('Nenhum membro cadastrado.');
+                    }
+                });
+            });
+        }
+        
+        function gerarRelatorio() {
+            const relatorio = {};
+            const totalSessoes = sessoes.length;
+
+            membros.forEach(m => {
+                relatorio[m.matricula] = { 
+                    matricula: m.matricula,
+                    nome: m.nome,
+                    grau: m.nome_grau || m.grau || 'N/A',
+                    presencas: 0 
+                };
+            });
+
+            sessoes.forEach(sessao => {
+                for (const matricula in sessao.frequencia) {
+                    if (sessao.frequencia[matricula] === true && relatorio[matricula]) {
+                        relatorio[matricula].presencas++;
+                    }
+                }
+            });
+
+            exibirRelatorio(relatorio, totalSessoes);
+        }
+
+        function exibirRelatorio(dadosRelatorio, totalSessoes) {
+            const tbody = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; 
+            
+            Object.values(dadosRelatorio).forEach(dados => {
+                const row = tbody.insertRow();
+                const percentagem = (dados.presencas / totalSessoes) * 100;
+
+                row.insertCell().textContent = dados.matricula;
+                row.insertCell().textContent = dados.nome;
+                row.insertCell().textContent = dados.grau;
+                row.insertCell().textContent = dados.presencas;
+                row.insertCell().textContent = totalSessoes;
+                row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
+            });
+        }
+
+
+        // --- CHECAGEM DE AUTENTICAÇÃO ---
+
+        auth.onAuthStateChanged((user) => {
             if (user) {
-                console.log("Usuário logado. Carregando dados...");
-                carregarDadosEGerarRelatorio(); 
+                // Se logado, inicia o carregamento da lista para o relatório
+                document.querySelector('button').onclick = carregarDadosParaRelatorio;
             } else {
-                console.log("Nenhum usuário logado.");
-                alert("Você precisa estar logado para ver os relatórios.");
-                window.location.href = 'index.html';
+                window.location.href = "/index.html";
             }
         });
 
-        // --- 3. FUNÇÃO PRINCIPAL PARA GERAR O RELATÓRIO ---
-        
-        async function carregarDadosEGerarRelatorio() {
-            try {
-                // 1. Buscar todos os membros e sessões em paralelo
-                const [membrosSnapshot, sessoesSnapshot] = await Promise.all([
-                    db.collection('membros').get(),
-                    db.collection('sessoes').get()
-                ]);
-
-                if (sessoesSnapshot.empty) {
-                    alert("Nenhuma sessão registrada para gerar o relatório.");
-                    return;
-                }
-
-                const totalSessoes = sessoesSnapshot.size;
-                
-                // 2. Processar os dados
-                const relatorioData = {};
-
-                // Inicializa os dados do relatório com todos os membros
-                membrosSnapshot.forEach(doc => {
-                    const membro = doc.data();
-                    relatorioData[membro.matricula] = {
-                        nome: membro.nome,
-                        presencas: 0,
-                        totalSessoes: totalSessoes,
-                        percentual: 0
-                    };
-                });
-
-                // Conta as presenças
-                sessoesSnapshot.forEach(doc => {
-                    const sessao = doc.data();
-                    if (sessao.presentes && Array.isArray(sessao.presentes)) {
-                        sessao.presentes.forEach(matricula => {
-                            if (relatorioData[matricula]) {
-                                relatorioData[matricula].presencas++;
-                            }
-                        });
-                    }
-                });
-                
-                // 3. Calcula a percentagem
-                for (const matricula in relatorioData) {
-                    const dados = relatorioData[matricula];
-                    if (dados.totalSessoes > 0) {
-                        dados.percentual = (dados.presencas / dados.totalSessoes) * 100;
-                    }
-                }
-
-                // 4. Preenche a tabela
-                const tabelaBody = document.querySelector("#tabela-relatorio tbody");
-                tabelaBody.innerHTML = ''; // Limpa a tabela antes de preencher
-
-                for (const matricula in relatorioData) {
-                    const dados = relatorioData[matricula];
-                    const newRow = tabelaBody.insertRow();
-                    newRow.innerHTML = `
-                        <td>${matricula}</td>
-                        <td>${dados.nome}</td>
-                        <td>${dados.presencas}</td>
-                        <td>${dados.totalSessoes}</td>
-                        <td>${dados.percentual.toFixed(1)}%</td>
-                    `;
-                }
-
-            } catch (error) {
-                console.error("Erro ao gerar relatório: ", error);
-                alert("Ocorreu um erro ao buscar os dados para o relatório. Verifique o console.");
-            }
-        }
     </script>
-
 </body>
 </html>

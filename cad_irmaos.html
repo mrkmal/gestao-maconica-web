@@ -10,64 +10,53 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     
     <style>
-        /* Estilos básicos para manter a aparência */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
-        .container { display: flex; flex-wrap: wrap; gap: 20px; }
-        .section { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1 1 300px; }
-        form label { display: block; margin: 10px 0 5px; font-weight: bold; }
-        form input[type="text"], form input[type="date"], form select, form input[type="password"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .section { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }
+        form input[type="text"], form input[type="number"], form select { 
+            width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; 
+            border-radius: 4px; box-sizing: border-box; display: block;
+        }
         button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background-color: #0056b3; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
 
-    <div id="app-content-internal">
-
-        <a href="index.html" style="text-decoration: none;"><button style="background-color: #555;">← Voltar ao Menu</button></a>
+    <a href="/index.html" style="text-decoration: none;"><button style="background-color: #555;">← Voltar ao Menu</button></a>
+    <div class="section">
         <h1>Gestão de Irmãos Maçônicos</h1>
         
-        <div class="container">
+        <form id="form-membro">
+            <h2>1. Cadastro de Irmãos</h2>
+            <label for="nome">Nome Completo:</label>
+            <input type="text" id="nome" required>
             
-            <div class="section" id="cadastro-membros">
-                <h2>1. Cadastro de Irmãos</h2>
-                <form id="form-membro">
-                    <label for="nome">Nome Completo:</label>
-                    <input type="text" id="nome" required>
-                    
-                    <label for="matricula">Matrícula (Única):</label>
-                    <input type="text" id="matricula" required>
-                    
-                    <label for="grau">Grau:</label>
-                    <select id="grau">
-                        <option value="">A carregar Graus...</option>
-                    </select>
-                    
-                    <button type="submit">Cadastrar Irmão</button>
-                </form>
+            <label for="matricula">Matrícula (Única):</label>
+            <input type="text" id="matricula" required>
+            
+            <label for="grau">Grau:</label>
+            <select id="grau">
+                <option value="">A carregar Graus...</option>
+            </select>
+            
+            <button type="submit">Cadastrar Irmão</button>
+        </form>
 
-                <h3>Lista de Irmãos Cadastrados</h3>
-                <table id="tabela-membros">
-                    <thead>
-                        <tr>
-                            <th>Matrícula</th>
-                            <th>Nome</th>
-                            <th>Grau</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
-            
-        </div> </div> <script>
-        // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
+        <h3>Lista de Irmãos Cadastrados</h3>
+        <table id="tabela-membros">
+            <thead>
+                <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Ações</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURAÇÃO DO FIREBASE ---
         const firebaseConfig = {
           apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
           authDomain: "gestao-maconica.firebaseapp.com",
@@ -84,125 +73,92 @@
 
         let membros = [];
         let graus = [];
-
-        /* --- 2. GESTÃO DE GRAUS (DINÂMICO) --- */
-
-        // Função para buscar e popular o Select de Graus
-        function popularGraus() {
-            db.collection("graus").orderBy("nome", "asc").onSnapshot((snapshot) => {
+        
+        // --- FUNÇÕES DE CARREGAMENTO ---
+        
+        // Carrega a lista global de graus (necessário para o dropdown)
+        function carregarGrausParaIrmaos() {
+             db.collection("graus").orderBy("numero", "asc").get().then((snapshot) => {
                 graus = [];
-                const selectGrau = document.getElementById('grau');
-                selectGrau.innerHTML = ''; 
-                
-                if (snapshot.empty) {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = 'ERRO: Nenhum grau cadastrado. Crie um em "Gerir Graus".';
-                    selectGrau.appendChild(option);
-                    return;
-                }
-
                 snapshot.forEach((doc) => {
-                    const grau = { id: doc.id, ...doc.data() };
-                    graus.push(grau);
-                    
-                    const option = document.createElement('option');
-                    option.value = grau.nome;
-                    option.textContent = grau.nome;
-                    selectGrau.appendChild(option);
+                    graus.push({ id: doc.id, ...doc.data() });
                 });
-                
-                // Agora que os graus estão carregados, carregamos os membros
-                carregarDados(); 
+                popularGrausDropdownMembro();
+                carregarMembros();
             });
         }
 
+        // Popula o dropdown de Cadastro de Irmãos
+        function popularGrausDropdownMembro() {
+            const selectGrau = document.getElementById('grau');
+            selectGrau.innerHTML = ''; 
+            selectGrau.appendChild(new Option('Selecione o Grau', '')); 
+            
+            graus.forEach((g) => {
+                const option = new Option(`${g.numero} - ${g.nome}`, g.numero);
+                option.setAttribute('data-nome', g.nome); 
+                selectGrau.appendChild(option);
+            });
+        }
 
-        /* --- 3. GESTÃO DE MEMBROS (CARREGAR/CRUD) --- */
-
-        // Carregar dados dos Membros do Firebase
-        function carregarDados() {
+        function carregarMembros() {
             db.collection("membros").onSnapshot((snapshot) => {
                 membros = [];
                 snapshot.forEach((doc) => {
                     membros.push({ id: doc.id, ...doc.data() });
                 });
-                exibirMembros(); 
-            }, (error) => {
-                console.error("Erro ao carregar membros: ", error);
+                exibirMembros();
             });
         }
 
-        // Evento de submissão do formulário de membros
+        // --- FUNÇÕES DE CRUD ---
+
         document.getElementById('form-membro').addEventListener('submit', function(e) {
             e.preventDefault();
             const nome = document.getElementById('nome').value;
             const matricula = document.getElementById('matricula').value.trim();
-            const grau = document.getElementById('grau').value;
-
-            if (membros.some(m => m.matricula === matricula)) {
-                alert('Erro: Já existe um membro com esta matrícula!');
-                return;
-            }
-            if (!grau) {
-                alert('Erro: Selecione um Grau Maçônico.');
-                return;
-            }
-
-            const novoMembro = { matricula, nome, grau };
             
-            db.collection("membros").add(novoMembro)
-                .then(() => {
-                    alert(`Irmão ${nome} cadastrado com sucesso!`);
-                    this.reset();
-                })
-                .catch((error) => {
-                    console.error("Erro ao adicionar documento: ", error);
-                    alert("Erro ao salvar o Irmão.");
-                });
+            const selectGrau = document.getElementById('grau');
+            const numeroGrau = parseInt(selectGrau.value, 10); 
+            const nomeGrau = selectGrau.options[selectGrau.selectedIndex].getAttribute('data-nome'); 
+            
+            db.collection("membros").add({ matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau })
+                .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); this.reset(); })
+                .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
         });
-
-        // Função para exibir a lista de membros na tabela (Com botão Excluir)
+        
         function exibirMembros() {
             const tbody = document.getElementById('tabela-membros').getElementsByTagName('tbody')[0];
             tbody.innerHTML = ''; 
-            
             membros.forEach(m => {
                 const row = tbody.insertRow();
                 row.insertCell().textContent = m.matricula;
                 row.insertCell().textContent = m.nome;
-                row.insertCell().textContent = m.grau;
-
+                row.insertCell().textContent = m.nome_grau || m.grau || 'N/A';
                 const cellAcoes = row.insertCell(); 
-                
                 const btnExcluir = document.createElement('button');
                 btnExcluir.textContent = 'Excluir';
-                btnExcluir.style.backgroundColor = '#dc3545'; 
-                btnExcluir.onclick = () => excluirMembro(m.id, m.nome); 
-                
+                btnExcluir.style.backgroundColor = '#dc3545';
+                btnExcluir.onclick = () => excluirMembro(m.id, m.nome);
                 cellAcoes.appendChild(btnExcluir);
             });
         }
         
-        // FUNÇÃO DE EXCLUSÃO DE MEMBRO
         function excluirMembro(membroId, nomeMembro) {
-            if (!confirm(`Tem certeza que deseja EXCLUIR o irmão ${nomeMembro}? Esta ação é irreversível!`)) {
-                return;
-            }
-
-            db.collection("membros").doc(membroId).delete()
-                .then(() => {
-                    alert(`Irmão ${nomeMembro} excluído do sistema!`);
-                })
-                .catch((error) => {
-                    console.error("Erro ao remover o membro: ", error);
-                    alert(`Erro ao tentar excluir o irmão ${nomeMembro}.`);
-                });
+             if (!confirm(`Excluir o irmão ${nomeMembro}?`)) return;
+             db.collection("membros").doc(membroId).delete().then(() => { alert(`Irmão ${nomeMembro} excluído!`); });
         }
 
-        /* --- 4. INICIALIZAÇÃO DA PÁGINA (CHAMADA DIRETA) --- */
 
-        popularGraus();
+        // --- CHECAGEM DE AUTENTICAÇÃO ---
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                carregarGrausParaIrmaos(); // Inicia o carregamento dos dados se logado
+            } else {
+                window.location.href = "/index.html";
+            }
+        });
 
     </script>
 </body>

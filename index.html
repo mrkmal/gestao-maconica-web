@@ -172,7 +172,7 @@
             <h3>Sessões Registradas</h3>
             <table id="tabela-sessoes">
                 <thead>
-                    <tr><th>Data</th><th>Tipo</th><th>Ações</th></tr>
+                    <tr><th>Data</th><th>Tipo</th><th>Grau Mínimo</th><th>Ações</th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -182,10 +182,23 @@
             <h2>Relatórios de Frequência</h2>
             
             <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
+
+            <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+                <strong>Legenda:</strong> P = Presente | F = Faltou | N = Não Elegível (Grau Insuficiente)
+            </div>
             
-            <table id="tabela-relatorio" style="margin-top: 20px;">
+            <h3 style="margin-top: 20px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
+            <table id="tabela-relatorio" style="margin-top: 10px;">
                 <thead>
-                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões</th><th>% Frequência</th></tr>
+                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>% Frequência</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3 style="margin-top: 30px;">Histórico Detalhado por Sessão</h3>
+            <table id="tabela-historico-sessoes">
+                <thead>
+                    <tr><th>Data</th><th>Grau Sessão</th><th>Status</th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -214,11 +227,11 @@
         let graus = [];
         let sessoes = [];
         let sessaoAtualParaFrequencia = null;
+        let membroSelecionadoParaRelatorio = null; // NOVO: Armazena o membro para o relatório detalhado
 
 
         /* --- 2. GESTÃO DE TELAS E NAVEGAÇÃO INTERNA --- */
 
-        // Função para mostrar a seção correta e esconder as outras
         function showSection(sectionId) {
             const sections = ['menu', 'graus', 'irmaos', 'sessoes', 'relatorios'];
             sections.forEach(id => {
@@ -241,12 +254,11 @@
             }
         }
 
-        // Funções para exibição da tela principal
         function mostrarApp() {
             document.getElementById('initial-loading').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
             document.getElementById('login-screen').style.display = 'none';
-            showSection('menu'); // Inicia mostrando o menu
+            showSection('menu'); 
         }
 
         function mostrarLogin() {
@@ -356,26 +368,20 @@
             });
         }
         
-        // NOVO: Função para preencher o formulário com dados de edição
         window.editarMembro = function(membroId) {
             const membro = membros.find(m => m.id === membroId);
             if (!membro) return;
 
-            // 1. Preenche os campos
             document.getElementById('nome').value = membro.nome;
             document.getElementById('matricula').value = membro.matricula;
-            // 2. Preenche o campo de grau (usa o numero_grau salvo)
             document.getElementById('grau').value = membro.numero_grau || ''; 
             
-            // 3. Define o ID no campo oculto para saber quem editar
             document.getElementById('membro-id-edicao').value = membroId; 
             
-            // 4. Muda a interface para MODO EDIÇÃO
             document.getElementById('btn-cadastrar').textContent = 'Salvar Alterações';
             document.getElementById('btn-cancelar').style.display = 'inline-block';
         }
         
-        // NOVO: Função para resetar a interface para MODO CADASTRO
         window.cancelarEdicao = function() {
             document.getElementById('form-membro').reset();
             document.getElementById('membro-id-edicao').value = '';
@@ -383,7 +389,6 @@
             document.getElementById('btn-cancelar').style.display = 'none';
         }
 
-        // ALTERADO: O listener agora verifica se é cadastro ou edição
         document.getElementById('form-membro').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -397,22 +402,19 @@
             const dadosMembro = { matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau };
 
             if (membroId) {
-                // SE HOUVER ID, CHAMA EDIÇÃO
                 db.collection("membros").doc(membroId).update(dadosMembro)
                     .then(() => { 
                         alert(`Irmão ${nome} atualizado (Novo Grau: ${nomeGrau})!`); 
-                        cancelarEdicao(); // Volta para o modo cadastro
+                        cancelarEdicao();
                     })
                     .catch((error) => { alert("Erro ao atualizar o Irmão."); console.error(error); });
             } else {
-                // CASO CONTRÁRIO, CHAMA CADASTRO
                 db.collection("membros").add(dadosMembro)
                     .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); this.reset(); })
                     .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
             }
         });
         
-        // ALTERADO: Adiciona os botões EDITAR e EXCLUIR na tabela
         function exibirMembros() {
             const tbody = document.getElementById('tabela-membros').getElementsByTagName('tbody')[0];
             tbody.innerHTML = ''; 
@@ -424,15 +426,13 @@
                 
                 const cellAcoes = row.insertCell(); 
                 
-                // Botão EDITAR
                 const btnEditar = document.createElement('button');
                 btnEditar.textContent = 'Editar';
                 btnEditar.className = 'action-btn';
-                btnEditar.style.backgroundColor = '#17a2b8'; // Cor azul
+                btnEditar.style.backgroundColor = '#17a2b8';
                 btnEditar.onclick = () => editarMembro(m.id);
                 cellAcoes.appendChild(btnEditar);
                 
-                // Botão EXCLUIR
                 const btnExcluir = document.createElement('button');
                 btnExcluir.textContent = 'Excluir';
                 btnExcluir.className = 'action-btn';
@@ -556,7 +556,7 @@
         }
 
 
-        /* --- 7. MÓDULO DE RELATÓRIOS --- */
+        /* --- 7. MÓDULO DE RELATÓRIOS (CORREÇÃO DE ELEGIBILIDADE) --- */
 
         function carregarDadosEGerarRelatorio() {
             carregarMembros(); 
@@ -566,46 +566,99 @@
                  return;
             }
             
+            // Variável temporária para armazenar os detalhes do relatório
             const relatorio = {};
-            const totalSessoes = sessoes.length;
+            const todasAsSessoes = sessoes;
 
-            membros.forEach(m => {
-                relatorio[m.matricula] = { 
-                    matricula: m.matricula,
-                    nome: m.nome,
-                    grau: m.nome_grau || m.grau,
-                    presencas: 0 
+            // Inicializa a estrutura do relatório e o array de histórico
+            membros.forEach(membro => {
+                relatorio[membro.matricula] = { 
+                    ...membro,
+                    presencas: 0,
+                    total_aptas: 0,
+                    historico: [] // Novo array para a tabela detalhada
                 };
             });
 
-            sessoes.forEach(sessao => {
-                for (const matricula in sessao.frequencia) {
-                    if (sessao.frequencia[matricula] === true && relatorio[matricula]) {
-                        relatorio[matricula].presencas++;
+            // Processa todas as sessões
+            todasAsSessoes.forEach(sessao => {
+                membros.forEach(membro => {
+                    const dadosRelatorio = relatorio[membro.matricula];
+                    if (!dadosRelatorio) return;
+
+                    const elegivel = membro.numero_grau && membro.numero_grau >= sessao.grau_requerido;
+                    const presente = sessao.frequencia[membro.matricula] === true;
+
+                    let status = 'N'; // Não Elegível
+
+                    if (elegivel) {
+                        dadosRelatorio.total_aptas++; // Conta apenas as sessões aptas
+                        status = presente ? 'P' : 'F';
+                        if (presente) {
+                            dadosRelatorio.presencas++;
+                        }
                     }
-                }
+
+                    // Adiciona ao histórico detalhado
+                    dadosRelatorio.historico.push({
+                        data: sessao.data,
+                        grau_sessao: sessao.grau_requerido,
+                        status: status
+                    });
+                });
             });
 
-            exibirRelatorio(relatorio, totalSessoes);
+            exibirRelatorio(relatorio);
         }
 
-        function exibirRelatorio(dadosRelatorio, totalSessoes) {
-            const tbody = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; 
+        function exibirRelatorio(dadosRelatorio) {
+            const tbodyResumo = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
+            const tbodyHistorico = document.getElementById('tabela-historico-sessoes').getElementsByTagName('tbody')[0];
+            tbodyResumo.innerHTML = ''; 
             
+            // Limpa o histórico anterior, se houver
+            tbodyHistorico.innerHTML = ''; 
+
+            // NOVO: Seleciona o primeiro membro para exibir o histórico detalhado
+            const primeiroMembro = Object.values(dadosRelatorio)[0];
+            if (primeiroMembro) {
+                 exibirHistoricoDetalhado(primeiroMembro.historico);
+            }
+            
+            // 1. Preenche a Tabela de Resumo
             Object.values(dadosRelatorio).forEach(dados => {
-                const row = tbody.insertRow();
-                const percentagem = (dados.presencas / totalSessoes) * 100;
+                const row = tbodyResumo.insertRow();
+                const totalAptas = dados.total_aptas;
+                const percentagem = totalAptas > 0 ? (dados.presencas / totalAptas) * 100 : 0;
 
                 row.insertCell().textContent = dados.matricula;
                 row.insertCell().textContent = dados.nome;
                 row.insertCell().textContent = dados.grau || 'N/A';
                 row.insertCell().textContent = dados.presencas;
-                row.insertCell().textContent = totalSessoes;
+                row.insertCell().textContent = totalAptas;
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
+                
+                // NOVO: Adiciona um listener para mostrar o histórico ao clicar
+                row.style.cursor = 'pointer';
+                row.style.backgroundColor = '#e6f7ff'; // Destaca que é clicável
+                row.onclick = () => exibirHistoricoDetalhado(dados.historico, dados.nome);
             });
 
-            alert('Relatório de Frequência Gerado!');
+            alert('Relatório de Frequência Gerado! Clique em um Irmão para ver o histórico.');
+        }
+
+        function exibirHistoricoDetalhado(historico, nomeMembro) {
+            const tbody = document.getElementById('tabela-historico-sessoes').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            
+            document.querySelector('#relatorios-section h3:last-of-type').textContent = `Histórico Detalhado para: ${nomeMembro}`;
+            
+            historico.forEach(h => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = h.data;
+                row.insertCell().textContent = h.grau_sessao;
+                row.insertCell().textContent = h.status;
+            });
         }
 
 

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - Sistema Maçônico</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    
+    <style>
+        /* Estilos básicos para o layout */
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        /* Estilos do Botão de Menu */
+        .menu-button { 
+            display: inline-block; 
+            padding: 10px 15px; 
+            margin: 10px 0;
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            font-size: 1em;
+        }
+        .menu-button:hover { background-color: #0056b3; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="menu-button" style="margin-right: 10px;">← Voltar ao Menu</a>
+    <button class="menu-button" onclick="gerarRelatorioFrequencia()">Gerar Relatório de Frequência</button>
+
+    <h2 style="margin-top: 20px;">Relatório de Frequência</h2>
+    <table id="tabela-relatorio">
+        <thead>
+            <tr>
+                <th>Matrícula</th>
+                <th>Nome</th>
+                <th>Presenças</th>
+                <th>Total de Sessões</th>
+                <th>% Frequência</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Os dados serão inseridos aqui via JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
+          authDomain: "gestao-maconica.firebaseapp.com",
+          projectId: "gestao-maconica",
+          storageBucket: "gestao-maconica.firebasestorage.app",
+          messagingSenderId: "57851106083",
+          appId: "1:57851106083:web:0572445f0f856d22347296",
+          measurementId: "G-F1ZZ7XB7DQ"
+        };
+
+        // Inicializa o Firebase e as Referências
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // --- 2. LÓGICA DE AUTENTICAÇÃO E CHAMADA DA FUNÇÃO ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log("Usuário logado. Gerando relatório...");
+                gerarRelatorioFrequencia(); 
+            } else {
+                console.log("Nenhum usuário logado.");
+                alert("Você precisa estar logado para ver os relatórios.");
+                window.location.href = 'index.html';
+            }
+        });
+
+        // --- 3. FUNÇÃO PRINCIPAL PARA GERAR O RELATÓRIO ---
+        async function gerarRelatorioFrequencia() {
+            try {
+                // 1. Buscar todos os membros e sessões em paralelo
+                const [membrosSnapshot, sessoesSnapshot] = await Promise.all([
+                    db.collection('membros').get(),
+                    db.collection('sessoes').get()
+                ]);
+
+                if (sessoesSnapshot.empty) {
+                    alert("Nenhuma sessão registrada para gerar o relatório.");
+                    return;
+                }
+
+                const totalSessoes = sessoesSnapshot.size;
+                
+                // 2. Processar os dados
+                const relatorioData = {};
+
+                // Inicializa os dados do relatório com todos os membros
+                membrosSnapshot.forEach(doc => {
+                    const membro = doc.data();
+                    relatorioData[membro.matricula] = {
+                        nome: membro.nome,
+                        presencas: 0,
+                        totalSessoes: totalSessoes,
+                        percentual: 0
+                    };
+                });
+
+                // Conta as presenças
+                sessoesSnapshot.forEach(doc => {
+                    const sessao = doc.data();
+                    if (sessao.presentes && Array.isArray(sessao.presentes)) {
+                        sessao.presentes.forEach(matricula => {
+                            if (relatorioData[matricula]) {
+                                relatorioData[matricula].presencas++;
+                            }
+                        });
+                    }
+                });
+                
+                // 3. Calcula a percentagem
+                for (const matricula in relatorioData) {
+                    const dados = relatorioData[matricula];
+                    if (dados.totalSessoes > 0) {
+                        dados.percentual = (dados.presencas / dados.totalSessoes) * 100;
+                    }
+                }
+
+                // 4. Preenche a tabela
+                const tabelaBody = document.querySelector("#tabela-relatorio tbody");
+                tabelaBody.innerHTML = ''; // Limpa a tabela antes de preencher
+
+                for (const matricula in relatorioData) {
+                    const dados = relatorioData[matricula];
+                    const newRow = tabelaBody.insertRow();
+                    newRow.innerHTML = `
+                        <td>${matricula}</td>
+                        <td>${dados.nome}</td>
+                        <td>${dados.presencas}</td>
+                        <td>${dados.totalSessoes}</td>
+                        <td>${dados.percentual.toFixed(1)}%</td>
+                    `;
+                }
+
+            } catch (error) {
+                console.error("Erro ao gerar relatório: ", error);
+                alert("Ocorreu um erro ao buscar os dados para o relatório. Verifique o console.");
+            }
+        }
+    </script>
+
+</body>
+</html>

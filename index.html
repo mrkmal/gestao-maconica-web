@@ -1,3 +1,5 @@
+HTML
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -150,8 +152,7 @@
             auth.signOut().then(() => { alert('Sessão encerrada.'); }).catch((error) => { console.error('Erro ao fazer logout:', error); });
         }
 
-        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação
-        // Esta função é o que garante que o login ou o menu são exibidos
+        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Agora lida com a tela de loading)
         auth.onAuthStateChanged((user) => {
             if (user) {
                 mostrarApp(); 

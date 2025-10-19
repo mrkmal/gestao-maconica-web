@@ -30,7 +30,7 @@
         }
         .menu-button:hover { background-color: #0056b3; }
 
-        /* Estilos de Login (Mantidos para a aparência inicial) */
+        /* Estilos de Login */
         #login-screen { 
             max-width: 400px; 
             margin: 100px auto; 
@@ -57,15 +57,15 @@
             cursor: pointer; 
             margin-top: 10px; 
         }
-        /* NOVO: A aplicação AGORA COMEÇA VISÍVEL para simplificar o teste */
+        /* CRUCIAL: A aplicação começa escondida */
         #app-content { 
-            display: block; 
+            display: none; 
         }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" style="display:none;"> 
+    <div id="login-screen">
         <h2>Acesso ao Sistema Maçônico</h2>
         <p>Use o botão "Criar Nova Conta" APENAS na primeira vez.</p>
         <form id="form-login">
@@ -85,24 +85,24 @@
         
         <button onclick="fazerLogout()" style="float: right; background-color: #333; margin-bottom: 20px;">Sair</button>
 
-        <h1>Menu Principal do Sistema Maçônico (MODO TESTE)</h1>
+        <h1>Menu Principal do Sistema Maçônico</h1>
         
         <div class="container" style="display: block; max-width: 600px; margin: auto;">
             
             <h2>Gestão e Cadastros</h2>
-            <a href="/cad_graus.html" class="menu-button">Gerir Graus Maçônicos</a>
-            <a href="/cad_irmaos.html" class="menu-button">Cadastro de Irmãos</a>
-            <a href="/cad_sessoes.html" class="menu-button">Registo de Sessões e Frequência (A Criar)</a>
+            <a href="javascript:void(0)" onclick="navigateTo('/cad_graus.html')" class="menu-button">Gerir Graus Maçônicos</a>
+            <a href="javascript:void(0)" onclick="navigateTo('/cad_irmaos.html')" class="menu-button">Cadastro de Irmãos</a>
+            <a href="javascript:void(0)" onclick="navigateTo('/cad_sessoes.html')" class="menu-button">Registo de Sessões e Frequência</a>
 
             <hr style="margin: 30px 0;">
             
             <h2>Relatórios e Configuração</h2>
-            <a href="/relatorios.html" class="menu-button">Relatórios de Frequência (A Criar)</a>
+            <a href="javascript:void(0)" onclick="navigateTo('/relatorios.html')" class="menu-button">Relatórios de Frequência</a>
             <a href="#" class="menu-button" style="background-color: #ccc; color: #555; cursor: default;">Gestão de Usuários (Próximo Módulo)</a>
         </div> 
 
     </div> <script>
-        /* Documentação JavaScript: Lógica de Autenticação (Testando sem checagem) */
+        /* Documentação JavaScript: Lógica de Autenticação e Menu */
         
         // --- 1. CONFIGURAÇÃO DO FIREBASE (COM OS SEUS DADOS) ---
         const firebaseConfig = {
@@ -119,9 +119,8 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth(); 
 
-        /* --- 2. FUNÇÕES DE AUTENTICAÇÃO (MANTIDAS) --- */
+        /* --- 2. GESTÃO DE AUTENTICAÇÃO E NAVEGAÇÃO --- */
 
-        // As funções de mostrar/esconder não são mais usadas, mas as mantemos para clareza
         function mostrarApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-content').style.display = 'block';
@@ -130,6 +129,17 @@
         function mostrarLogin() {
             document.getElementById('login-screen').style.display = 'block';
             document.getElementById('app-content').style.display = 'none';
+        }
+
+        // FUNÇÃO CORRIGIDA: Navega apenas se o usuário estiver logado
+        function navigateTo(url) {
+            // Verifica se o Firebase TEM um usuário logado ANTES de sair da página
+            if (auth.currentUser) {
+                window.location.href = url; // Ex: /cad_graus.html
+            } else {
+                alert('A sessão expirou. Por favor, faça login novamente.');
+                mostrarLogin();
+            }
         }
         
         // Criar uma Nova Conta
@@ -166,7 +176,8 @@
                     return auth.signInWithEmailAndPassword(email, password);
                 })
                 .then(() => {
-                    alert('Login bem-sucedido. Pode navegar agora.');
+                    // Ao fazer login com sucesso, ele usa o listener abaixo para mostrar o app
+                    alert('Login bem-sucedido. Aguardando carregamento da sessão...');
                 })
                 .catch((error) => {
                     alert('Erro no Login: Email ou senha inválidos.');
@@ -184,11 +195,15 @@
                 });
         }
 
-        // REMOVIDO: O listener auth.onAuthStateChanged() foi removido para este teste.
+        // VERIFICAÇÃO PRINCIPAL: Monitorizar o estado da autenticação (Garante que a página está protegida)
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                mostrarApp(); 
+            } else {
+                mostrarLogin(); 
+            }
+        });
         
-        // Inicialização: Se quiser forçar o login no início:
-        // mostrarLogin(); 
-
     </script>
 </body>
 </html>

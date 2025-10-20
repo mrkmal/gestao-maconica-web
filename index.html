@@ -1,60 +1,788 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão Maçônica</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>Sistema de Gestão Maçônica - Completo</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Estilos de layout e login */
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        .section-content { 
+            background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-top: 20px; max-width: 900px; margin-left: auto; margin-right: auto;
+        }
+        .menu-button { 
+            display: block; width: 100%; padding: 15px; margin: 10px 0;
+            background-color: #007bff; color: white; border: none; border-radius: 4px; 
+            cursor: pointer; text-align: left; font-size: 1.1em; text-decoration: none;
+        }
+        .menu-button:hover { background-color: #0056b3; }
+        #login-screen { 
+            max-width: 400px; margin: 100px auto; padding: 20px; background-color: #fff; 
+            border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+        form input[type="text"], form input[type="password"], form input[type="number"], form input[type="date"], form select { 
+            width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; 
+            border-radius: 4px; box-sizing: border-box; display: block;
+        }
+        button { 
+            background-color: #007bff; color: white; padding: 10px 15px; 
+            border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
+        }
+        button.action-btn { margin: 5px; padding: 8px 12px; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .tabela-frequencia td { text-align: center; }
+        
+        /* CSS que controla a visibilidade (Esconde o app e o login no carregamento) */
+        #main-content, #login-screen { 
+            display: none; 
+        }
+    </style>
 </head>
 <body>
+    
+    <div id="initial-loading" style="text-align: center; margin-top: 50px;">
+        <h2>A carregar sistema...</h2>
+    </div>
 
-    <div id="login-container">
-        <h2>Login</h2>
-        <form id="login-form">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Senha" required>
-            <button type="submit" id="login-button">Entrar</button>
+    <div id="login-screen">
+        <h2>Acesso ao Sistema Maçônico</h2>
+        <p>Use o botão "Criar Nova Conta" APENAS na primeira vez.</p>
+        <form id="form-login">
+            <label for="login-email">Email:</label>
+            <input type="text" id="login-email" required>
+            
+            <label for="login-password">Senha:</label>
+            <input type="password" id="login-password" required>
+            
+            <button type="button" onclick="fazerLogin()">Entrar</button>
+            <button type="button" onclick="criarConta()">Criar Nova Conta</button>
+            <p id="login-status" style="color:red; margin-top: 10px;"></p>
         </form>
     </div>
 
-    <div id="main-content-wrapper" style="display: none;">
-        <header>
-            <h1>Gestão Maçônica</h1>
-            <nav>
-                <ul>
-                    <li><a href="#" class="nav-link" data-module="modules/graus.html">Graus</a></li>
-                    <li><a href="#" class="nav-link" data-module="modules/macons.html">Maçons</a></li>
-                    <li><a href="#" class="nav-link" data-module="modules/reunioes.html">Reuniões</a></li>
-                    <li><a href="#" class="nav-link" data-module="modules/eventos.html">Eventos</a></li>
-                </ul>
-            </nav>
-            <button id="logout-button">Sair</button>
-        </header>
+    <div id="main-content">
+        
+        <button onclick="fazerLogout()" style="float: right; background-color: #333; margin-bottom: 20px;">Sair</button>
 
-        <main id="content">
-            <!-- O conteúdo dos módulos será carregado aqui -->
-        </main>
+        <h1>Sistema de Gestão Maçônica - Arquivo Único</h1>
+        
+        <div style="margin-bottom: 20px;">
+            <button onclick="showSection('menu')">Menu Principal</button>
+            <button onclick="showSection('graus')">Gestão de Graus</button>
+            <button onclick="showSection('irmaos')">Cadastro de Irmãos</button>
+            <button onclick="showSection('sessoes')">Registo de Sessões</button>
+            <button onclick="showSection('relatorios')">Relatórios</button>
+        </div>
 
-        <footer>
-            <p>&copy; 2024 Gestão Maçônica. Todos os direitos reservados.</p>
-        </footer>
-    </div>
+        <div id="menu-section" class="section-content">
+            <h2>Menu Principal</h2>
+            <p>Selecione uma opção para gerir os dados:</p>
+        </div>
 
-    <!-- Scripts Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="js/firebase-config.js"></script>
+        <div id="graus-section" class="section-content" style="display:none;">
+            <h2>Gestão de Graus Maçônicos</h2>
 
-    <!-- Scripts dos Módulos (carregados primeiro para registrar inicializadores) -->
-    <script src="js/graus.js"></script>
-    <script src="js/macons.js"></script>
-    <script src="js/reunioes.js"></script>
-    <script src="js/eventos.js"></script>
+            <form id="form-grau">
+                <label for="numero-grau">Número/Ordem do Grau:</label>
+                <input type="number" id="numero-grau" required min="1" value="1"> 
+                
+                <label for="nome-grau">Nome do Grau:</label>
+                <input type="text" id="nome-grau" required>
+                
+                <button type="submit">Adicionar Grau</button>
+            </form>
 
-    <!-- Scripts Principais da Aplicação -->
-    <script src="js/main.js"></script> 
-    <script src="js/auth.js"></script>
+            <h3>Graus Cadastrados</h3>
+            <table id="tabela-graus">
+                <thead>
+                    <tr><th>Nº</th><th>Nome do Grau</th><th>Ações</th></tr> 
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <div id="irmaos-section" class="section-content" style="display:none;">
+            <h2>Cadastro de Irmãos</h2>
+            <form id="form-membro">
+                <label for="nome">Nome Completo:</label>
+                <input type="text" id="nome" required>
+                
+                <label for="matricula">Matrícula (Única):</label>
+                <input type="text" id="matricula" required>
+                
+                <label for="grau">Grau:</label>
+                <select id="grau">
+                    <option value="">A carregar Graus...</option>
+                </select>
+                
+                <input type="hidden" id="membro-id-edicao" value=""> 
 
+                <button type="submit" id="btn-cadastrar">Cadastrar Irmão</button>
+                <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" style="display:none; background-color:#6c757d;">Cancelar Edição</button>
+            </form>
+
+            <h3>Lista de Irmãos Cadastrados</h3>
+            <table id="tabela-membros">
+                <thead>
+                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="sessoes-section" class="section-content" style="display:none;">
+            <h2>Registo de Sessão e Frequência</h2>
+            <form id="form-sessao">
+                <label for="data-sessao">Data da Sessão:</label>
+                <input type="date" id="data-sessao" required>
+                
+                <label for="tipo-sessao">Tipo/Nome da Sessão:</label>
+                <input type="text" id="tipo-sessao" required>
+                
+                <label for="grau-sessao-requerido">Grau da Sessão:</label>
+                <select id="grau-sessao-requerido" required>
+                    <option value="">A carregar Graus...</option>
+                </select>
+                
+                <button type="submit">Criar Sessão e Marcar Frequência</button>
+            </form>
+
+            <div id="frequencia-form" style="display:none; margin-top: 20px;">
+                <h3>Marcar Frequência (Sessão: <span id="sessao-data-display"></span>)</h3>
+                <form id="form-frequencia">
+                    <table id="tabela-frequencia" class="tabela-frequencia">
+                        <thead>
+                            <tr><th>Nome do Irmão</th><th>Presença</th><th>Falta</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <button type="button" onclick="salvarFrequencia()">Salvar Frequência</button>
+                </form>
+            </div>
+
+            <h3>Sessões Registradas</h3>
+            <table id="tabela-sessoes">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Grau</th> 
+                        <th>Total de Presentes</th> 
+                        <th>Total de Aptos</th> 
+                        <th>% de Frequência</th> 
+                        <th>Ações</th> 
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="relatorios-section" class="section-content" style="display:none;">
+            <h2>Relatórios de Frequência</h2>
+            
+            <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
+            <button onclick="exportarParaPDF()" style="background-color: #dc3545;">Exportar para PDF</button>
+
+            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
+                <h4 style="text-align: center; margin-bottom: 20px;">Relatório de Frequência - Detalhado por Sessão</h4>
+
+                <div style="overflow-x: auto;">
+                    <table id="tabela-relatorio-dinamica">
+                        </table>
+                </div>
+
+                <h3 style="margin-top: 30px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
+                <table id="tabela-relatorio-resumo" style="margin-top: 10px;">
+                    <thead>
+                        <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>Total de Faltas</th><th>% Frequência</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+                <strong>Legenda:</strong> P = Presente | F = Faltou | N = Não Elegível (Grau Insuficiente)
+            </div>
+            
+        </div>
+
+
+    </div> <script>
+        /* Documentação JavaScript: Lógica Completa e Consolidada */
+        
+        // --- 1. CONFIGURAÇÃO DO FIREBASE ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
+          authDomain: "gestao-maconica.firebaseapp.com",
+          projectId: "gestao-maconica",
+          storageBucket: "gestao-maconica.firebasestorage.app",
+          messagingSenderId: "57851106083",
+          appId: "1:57851106083:web:0572445f0f856d22347296",
+          measurementId: "G-F1ZZ7XB7DQ"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth(); 
+
+        let membros = [];
+        let graus = [];
+        let sessoes = [];
+        let sessaoAtualParaFrequencia = null;
+
+
+        /* --- 2. GESTÃO DE TELAS E NAVEGAÇÃO INTERNA --- */
+
+        function showSection(sectionId) {
+            const sections = ['menu', 'graus', 'irmaos', 'sessoes', 'relatorios'];
+            sections.forEach(id => {
+                const element = document.getElementById(id + '-section');
+                if (element) {
+                    element.style.display = (id === sectionId) ? 'block' : 'none';
+                }
+            });
+
+            if (sectionId === 'irmaos') {
+                popularGrausDropdownMembro(); 
+                carregarMembros();
+                cancelarEdicao(); 
+            } else if (sectionId === 'sessoes') {
+                popularGrausDropdownSessao(); 
+                carregarMembrosESessoes();
+            } else if (sectionId === 'relatorios') {
+                carregarMembrosESessoes(); 
+            }
+        }
+
+        function mostrarApp() {
+            document.getElementById('initial-loading').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            document.getElementById('login-screen').style.display = 'none';
+            showSection('menu'); 
+        }
+
+        function mostrarLogin() {
+            document.getElementById('initial-loading').style.display = 'none';
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+        }
+
+
+        /* --- 3. MÓDULO DE AUTENTICAÇÃO --- */
+
+        function criarConta() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(() => { alert('Conta criada! Inicie sessão.'); })
+                .catch((error) => { alert('Erro: ' + error.message); });
+        }
+        
+        function fazerLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => { return auth.signInWithEmailAndPassword(email, password); })
+                .then(() => { alert('Login bem-sucedido!'); })
+                .catch((error) => { alert('Erro no Login: ' + error.message); });
+        }
+        
+        function fazerLogout() {
+            auth.signOut().then(() => { mostrarLogin(); }).catch((error) => { console.error('Erro:', error); });
+        }
+
+
+        /* --- 4. MÓDULO DE GESTÃO DE GRAUS --- */
+
+        function carregarGraus() {
+            db.collection("graus").orderBy("numero", "asc").onSnapshot((snapshot) => {
+                graus = [];
+                snapshot.forEach((doc) => {
+                    graus.push({ id: doc.id, ...doc.data() });
+                });
+                if (document.getElementById('graus-section').style.display === 'block') {
+                    exibirGraus(); 
+                }
+            });
+        }
+
+        function exibirGraus() {
+            const tbody = document.getElementById('tabela-graus').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; 
+            graus.forEach(g => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = g.numero; 
+                row.insertCell().textContent = g.nome;
+                const cellAcoes = row.insertCell(); 
+                const btnExcluir = document.createElement('button');
+                btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'action-btn';
+                btnExcluir.style.backgroundColor = '#dc3545';
+                btnExcluir.onclick = () => excluirGrau(g.id, g.nome);
+                cellAcoes.appendChild(btnExcluir);
+            });
+        }
+        
+        document.getElementById('form-grau').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nome = document.getElementById('nome-grau').value.trim();
+            const numero = parseInt(document.getElementById('numero-grau').value, 10); 
+            db.collection("graus").add({ nome: nome, numero: numero }) 
+                .then(() => { alert(`Grau ${numero} - "${nome}" cadastrado!`); this.reset(); })
+                .catch((error) => { alert("Erro ao salvar o Grau. Verifique as regras!"); console.error(error); });
+        });
+
+        function excluirGrau(grauId, nomeGrau) {
+            if (!confirm(`Excluir o Grau "${nomeGrau}"?`)) return;
+            db.collection("graus").doc(grauId).delete()
+                .then(() => { alert(`Grau "${nomeGrau}" excluído!`); })
+                .catch((error) => { alert(`Erro ao tentar excluir!`); console.error(error); });
+        }
+
+
+        /* --- 5. MÓDULO DE CADASTRO DE IRMÃOS (AGORA COM EDIÇÃO DE GRAU) --- */
+
+        function popularGrausDropdownMembro() {
+            carregarGraus(); 
+            
+            const selectGrau = document.getElementById('grau');
+            selectGrau.innerHTML = ''; 
+            selectGrau.appendChild(new Option('Selecione o Grau', '')); 
+            
+            graus.forEach((g) => {
+                const option = new Option(`${g.numero} - ${g.nome}`, g.numero);
+                option.setAttribute('data-nome', g.nome); 
+                selectGrau.appendChild(option);
+            });
+        }
+
+        function carregarMembros() {
+            db.collection("membros").onSnapshot((snapshot) => {
+                membros = [];
+                snapshot.forEach((doc) => {
+                    membros.push({ id: doc.id, ...doc.data() });
+                });
+                if (document.getElementById('irmaos-section').style.display === 'block') {
+                    exibirMembros();
+                }
+            });
+        }
+        
+        window.editarMembro = function(membroId) {
+            const membro = membros.find(m => m.id === membroId);
+            if (!membro) return;
+
+            document.getElementById('nome').value = membro.nome;
+            document.getElementById('matricula').value = membro.matricula;
+            document.getElementById('grau').value = membro.numero_grau || ''; 
+            
+            document.getElementById('membro-id-edicao').value = membroId; 
+            
+            document.getElementById('btn-cadastrar').textContent = 'Salvar Alterações';
+            document.getElementById('btn-cancelar').style.display = 'inline-block';
+        }
+        
+        window.cancelarEdicao = function() {
+            document.getElementById('form-membro').reset();
+            document.getElementById('membro-id-edicao').value = '';
+            document.getElementById('btn-cadastrar').textContent = 'Cadastrar Irmão';
+            document.getElementById('btn-cancelar').style.display = 'none';
+        }
+
+        document.getElementById('form-membro').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const membroId = document.getElementById('membro-id-edicao').value;
+            const nome = document.getElementById('nome').value;
+            const matricula = document.getElementById('matricula').value.trim();
+            const selectGrau = document.getElementById('grau');
+            const numeroGrau = parseInt(selectGrau.value, 10); 
+            const nomeGrau = selectGrau.options[selectGrau.selectedIndex].getAttribute('data-nome'); 
+            
+            const dadosMembro = { matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau };
+
+            if (membroId) {
+                db.collection("membros").doc(membroId).update(dadosMembro)
+                    .then(() => { 
+                        alert(`Irmão ${nome} atualizado (Novo Grau: ${nomeGrau})!`); 
+                        cancelarEdicao();
+                    })
+                    .catch((error) => { alert("Erro ao atualizar o Irmão."); console.error(error); });
+            } else {
+                db.collection("membros").add(dadosMembro)
+                    .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); this.reset(); })
+                    .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
+            }
+        });
+        
+        function exibirMembros() {
+            const tbody = document.getElementById('tabela-membros').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; 
+            membros.forEach(m => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = m.matricula;
+                row.insertCell().textContent = m.nome;
+                row.insertCell().textContent = m.nome_grau || m.grau || 'N/A';
+                
+                const cellAcoes = row.insertCell(); 
+                
+                const btnEditar = document.createElement('button');
+                btnEditar.textContent = 'Editar';
+                btnEditar.className = 'action-btn';
+                btnEditar.style.backgroundColor = '#17a2b8';
+                btnEditar.onclick = () => editarMembro(m.id);
+                cellAcoes.appendChild(btnEditar);
+                
+                const btnExcluir = document.createElement('button');
+                btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'action-btn';
+                btnExcluir.style.backgroundColor = '#dc3545';
+                btnExcluir.onclick = () => excluirMembro(m.id, m.nome);
+                cellAcoes.appendChild(btnExcluir);
+            });
+        }
+        
+        function excluirMembro(membroId, nomeMembro) {
+             if (!confirm(`Excluir o irmão ${nomeMembro}?`)) return;
+             db.collection("membros").doc(membroId).delete().then(() => { alert(`Irmão ${nomeMembro} excluído!`); });
+        }
+
+
+        /* --- 6. MÓDULO DE REGISTO DE SESSÕES (COM CONTROLE DE GRAU) --- */
+        
+        function popularGrausDropdownSessao() {
+            carregarGraus(); 
+            
+            const selectGrau = document.getElementById('grau-sessao-requerido');
+            selectGrau.innerHTML = ''; 
+            selectGrau.appendChild(new Option('Selecione o Grau Requerido', '')); 
+            
+            graus.forEach((g) => {
+                const option = new Option(`${g.numero} - ${g.nome}`, g.numero);
+                selectGrau.appendChild(option);
+            });
+        }
+
+        function carregarMembrosESessoes() { 
+            carregarMembros(); 
+            db.collection("sessoes").orderBy("data", "desc").onSnapshot((snapshot) => {
+                sessoes = [];
+                snapshot.forEach((doc) => { sessoes.push({ id: doc.id, ...doc.data() }); });
+                if (document.getElementById('sessoes-section').style.display === 'block') {
+                    exibirSessoes();
+                }
+            });
+        }
+        
+        document.getElementById('form-sessao').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = document.getElementById('data-sessao').value;
+            const tipo = document.getElementById('tipo-sessao').value;
+            const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
+            
+            if (isNaN(grauRequeridoNumero)) {
+                alert('Por favor, selecione um Grau Mínimo Requerido para a Sessão.');
+                return;
+            }
+
+            sessaoAtualParaFrequencia = { data, tipo, grau_requerido: grauRequeridoNumero, frequencia: {} };
+            prepararFormularioFrequencia(sessaoAtualParaFrequencia);
+        });
+
+        // FUNÇÃO CRÍTICA: FILTRO POR GRAU
+        function prepararFormularioFrequencia(sessao) {
+            
+            const grauRequerido = sessao.grau_requerido;
+            
+            const membrosElegiveis = membros.filter(m => {
+                return m.numero_grau && m.numero_grau >= grauRequerido;
+            });
+            
+            if (membrosElegiveis.length === 0) { 
+                alert(`Nenhum irmão é elegível para esta sessão (Grau Mínimo: ${grauRequerido}).`); 
+                document.getElementById('form-sessao').style.display = 'block';
+                return; 
+            }
+
+            document.getElementById('sessao-data-display').textContent = `${sessao.data} (${sessao.tipo} - Grau Mínimo: ${grauRequerido})`;
+            const tbodyFrequencia = document.getElementById('tabela-frequencia').getElementsByTagName('tbody')[0];
+            tbodyFrequencia.innerHTML = ''; 
+
+            membrosElegiveis.forEach(m => { 
+                const row = tbodyFrequencia.insertRow();
+                row.insertCell().textContent = `${m.nome} (G: ${m.numero_grau})`;
+                const cellPresenca = row.insertCell();
+                const inputPresenca = document.createElement('input');
+                inputPresenca.type = 'radio'; inputPresenca.name = 'frequencia_' + m.matricula; inputPresenca.value = 'presente'; inputPresenca.checked = true;
+                cellPresenca.appendChild(inputPresenca);
+                const cellFalta = row.insertCell();
+                const inputFalta = document.createElement('input');
+                inputFalta.type = 'radio'; inputFalta.name = 'frequencia_' + m.matricula; inputFalta.value = 'ausente';
+                cellFalta.appendChild(inputFalta);
+            });
+
+            document.getElementById('frequencia-form').style.display = 'block';
+            document.getElementById('form-sessao').style.display = 'none';
+        }
+
+        function salvarFrequencia() {
+            const formFrequencia = document.getElementById('form-frequencia');
+            membros.forEach(m => {
+                const radios = formFrequencia.elements['frequencia_' + m.matricula];
+                if (radios) { 
+                     sessaoAtualParaFrequencia.frequencia[m.matricula] = (radios.value === 'presente');
+                }
+            });
+
+            db.collection("sessoes").add(sessaoAtualParaFrequencia)
+                .then(() => { alert('Frequência salva!'); 
+                    document.getElementById('frequencia-form').style.display = 'none';
+                    document.getElementById('form-sessao').style.display = 'block';
+                    document.getElementById('form-sessao').reset();
+                })
+                .catch((error) => { console.error(error); alert("Erro ao salvar frequência."); });
+        }
+
+        function exibirSessoes() {
+            const tbody = document.getElementById('tabela-sessoes').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; 
+            sessoes.forEach(s => {
+                const row = tbody.insertRow();
+                
+                const nomeGrau = graus.find(g => g.numero === s.grau_requerido)?.nome || `Grau ${s.grau_requerido}`;
+                
+                // Calcula Totais para a Tabela de Sessões Registradas
+                const totalPresentes = Object.values(s.frequencia).filter(p => p === true).length;
+                const totalAptos = membros.filter(m => m.numero_grau >= s.grau_requerido).length;
+                const percentagem = totalAptos > 0 ? (totalPresentes / totalAptos) * 100 : 0;
+                
+                // Colunas
+                row.insertCell().textContent = s.data;
+                row.insertCell().textContent = nomeGrau; 
+                row.insertCell().textContent = totalPresentes;
+                row.insertCell().textContent = totalAptos;
+                row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
+                
+                // Coluna Ações
+                const cellAcoes = row.insertCell(); 
+                const btnVisualizar = document.createElement('button');
+                btnVisualizar.textContent = 'Ver/Alt';
+                btnVisualizar.className = 'action-btn';
+                btnVisualizar.style.backgroundColor = '#17a2b8';
+                btnVisualizar.onclick = () => alert('Funcionalidade de Alterar Sessão em breve!');
+                cellAcoes.appendChild(btnVisualizar);
+
+                const btnExcluir = document.createElement('button');
+                btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'action-btn';
+                btnExcluir.style.backgroundColor = '#dc3545';
+                btnExcluir.onclick = () => excluirSessao(s.id, s.data);
+                cellAcoes.appendChild(btnExcluir);
+            });
+        }
+        
+        function excluirSessao(sessaoId, dataSessao) {
+            if (!confirm(`Excluir a sessão de ${dataSessao}? Esta ação é irreversível e afetará os relatórios!`)) return;
+            db.collection("sessoes").doc(sessaoId).delete()
+                .then(() => { alert(`Sessão de ${dataSessao} excluída!`); })
+                .catch((error) => { alert(`Erro ao tentar excluir a sessão!`); console.error(error); });
+        }
+
+
+        /* --- 7. MÓDULO DE RELATÓRIOS (CORREÇÃO DE ELEGIBILIDADE E DETALHES) --- */
+
+        function carregarDadosEGerarRelatorio() {
+            carregarMembros(); 
+            
+            if (sessoes.length === 0) {
+                 alert('Não há sessões registradas para gerar o relatório.');
+                 return;
+            }
+            
+            const todasAsSessoes = sessoes;
+            const relatorio = {};
+
+            membros.forEach(membro => {
+                relatorio[membro.matricula] = { 
+                    matricula: membro.matricula,
+                    nome: membro.nome,
+                    grau: membro.nome_grau || membro.grau || 'N/A', 
+                    numero_grau: membro.numero_grau || 0, 
+                    presencas: 0,
+                    faltas: 0, 
+                    total_aptas: 0,
+                    historico: [] 
+                };
+            });
+
+            todasAsSessoes.forEach(sessao => {
+                membros.forEach(membro => {
+                    const dadosRelatorio = relatorio[membro.matricula];
+                    if (!dadosRelatorio) return;
+
+                    const grauRequerido = sessao.grau_requerido || 0;
+                    const elegivel = dadosRelatorio.numero_grau >= grauRequerido;
+                    const presente = sessao.frequencia[membro.matricula] === true;
+
+                    let status = 'N'; // Não Elegível
+
+                    if (elegivel) {
+                        dadosRelatorio.total_aptas++; 
+                        status = presente ? 'P' : 'F';
+                        if (presente) {
+                            dadosRelatorio.presencas++;
+                        } else {
+                            dadosRelatorio.faltas++;
+                        }
+                    }
+
+                    dadosRelatorio.historico.push({
+                        data: sessao.data,
+                        grau_sessao: sessao.grau_requerido,
+                        status: status
+                    });
+                });
+            });
+
+            exibirRelatorio(relatorio);
+        }
+        
+        // Função para exportar a div de conteúdo para PDF
+        window.exportarParaPDF = function() {
+            const element = document.getElementById('relatorio-content');
+            const opt = {
+                margin: 0.5,
+                filename: 'Relatorio_Frequencia_Maconica.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+
+            if (element.innerHTML.includes('tabela-relatorio-dinamica')) {
+                 html2pdf().set(opt).from(element).save();
+            } else {
+                 alert('Por favor, gere o relatório antes de exportar.');
+            }
+        }
+
+
+        function exibirRelatorio(dadosRelatorio) {
+            const tbodyResumo = document.getElementById('tabela-relatorio-resumo').getElementsByTagName('tbody')[0];
+            const tabelaDinamica = document.getElementById('tabela-relatorio-dinamica');
+            
+            tbodyResumo.innerHTML = ''; 
+            tabelaDinamica.innerHTML = ''; 
+            
+            // -------------------------------------------------------------
+            // 1. GERAÇÃO DA TABELA DINÂMICA (Layout Excel)
+            // -------------------------------------------------------------
+
+            let headerHTML = '<thead><tr><th rowspan="2">Matrícula</th><th rowspan="2">Nome</th><th rowspan="2">Grau</th>';
+            
+            const datasSessoes = sessoes.map(s => s.data).sort(); 
+
+            // Adiciona Colunas Dinâmicas de Sessão
+            datasSessoes.forEach(data => {
+                headerHTML += `<th colspan="1" style="text-align:center; font-size: 0.8em;">${data}</th>`;
+            });
+
+            // Adiciona as colunas de resumo final
+            headerHTML += `<th rowspan="2">Sessões Aptas</th><th rowspan="2">Presença</th><th rowspan="2">Falta</th><th rowspan="2">% PRESENÇA</th></tr>`;
+            
+            // A segunda linha será para o Grau Requerido da Sessão
+            let headerGrausRequeridosHTML = '<tr><th></th><th></th><th></th>'; 
+            datasSessoes.forEach(data => {
+                const sessao = sessoes.find(s => s.data === data);
+                headerGrausRequeridosHTML += `<th style="text-align:center; font-size: 0.8em;">G: ${sessao.grau_requerido || 'N/A'}</th>`;
+            });
+            headerGrausRequeridosHTML += `<th></th><th></th><th></th><th></th></tr>`; 
+
+            tabelaDinamica.innerHTML = headerHTML + headerGrausRequeridosHTML;
+
+            // -------------------------------------------------------------
+            // 2. GERAÇÃO DO CORPO DA TABELA DINÂMICA
+            // -------------------------------------------------------------
+
+            const tbodyDinamica = tabelaDinamica.createTBody();
+            
+            Object.values(dadosRelatorio).forEach(dados => {
+                const row = tbodyDinamica.insertRow();
+
+                // Colunas de Identificação
+                row.insertCell().textContent = dados.matricula;
+                row.insertCell().textContent = dados.nome;
+                row.insertCell().textContent = dados.grau;
+                
+                // Colunas Dinâmicas de Status
+                datasSessoes.forEach(data => {
+                    const historicoSessao = dados.historico.find(h => h.data === data);
+                    const status = historicoSessao ? historicoSessao.status : '';
+                    const cell = row.insertCell();
+                    cell.textContent = status;
+                    cell.style.textAlign = 'center';
+                });
+
+                // Colunas de Resumo Final
+                const totalAptas = dados.total_aptas;
+                const percentagem = totalAptas > 0 ? (dados.presencas / totalAptas) * 100 : 0;
+                
+                row.insertCell().textContent = totalAptas;
+                row.insertCell().textContent = dados.presencas;
+                row.insertCell().textContent = dados.faltas;
+                row.insertCell().textContent = `${percentagem.toFixed(2)}%`;
+            });
+            
+            
+            // -------------------------------------------------------------
+            // 3. PREENCHE A TABELA DE RESUMO (Tabela debaixo)
+            // -------------------------------------------------------------
+            Object.values(dadosRelatorio).forEach(dados => {
+                const row = tbodyResumo.insertRow();
+                const totalAptas = dados.total_aptas;
+                const percentagem = totalAptas > 0 ? (dados.presencas / totalAptas) * 100 : 0;
+
+                row.insertCell().textContent = dados.matricula;
+                row.insertCell().textContent = dados.nome;
+                row.insertCell().textContent = dados.grau;
+                row.insertCell().textContent = dados.presencas;
+                row.insertCell().textContent = totalAptas;
+                row.insertCell().textContent = dados.faltas; 
+                row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
+                
+                // Adiciona um listener para mostrar o histórico ao clicar
+                row.style.cursor = 'pointer';
+                row.style.backgroundColor = '#e6f7ff'; 
+                row.onclick = () => alert(`Dados de Resumo para: ${dados.nome}`);
+            });
+
+
+            alert('Relatório de Frequência Gerado! (Layout Dinâmico)');
+        }
+
+
+        /* --- 8. INICIALIZAÇÃO DA APLICAÇÃO --- */
+
+        document.addEventListener('DOMContentLoaded', carregarGraus);
+
+        auth.onAuthStateChanged((user) => {
+            document.getElementById('initial-loading').style.display = 'none';
+            if (user) {
+                mostrarApp(); 
+            } else {
+                mostrarLogin(); 
+            }
+        });
+        
+    </script>
 </body>
 </html>

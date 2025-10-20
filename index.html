@@ -9,6 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> 
+
     <style>
         /* Estilos de layout e login */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
@@ -182,26 +184,27 @@
             <h2>Relatórios de Frequência</h2>
             
             <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
+            <button onclick="exportarParaPDF()" style="background-color: #dc3545;">Exportar para PDF</button>
+
+            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
+                <h4 style="text-align: center; margin-bottom: 20px;">Relatório de Frequência - Detalhado por Sessão</h4>
+
+                <table id="tabela-relatorio-dinamica">
+                    </table>
+
+                <h3 style="margin-top: 30px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
+                <table id="tabela-relatorio-resumo" style="margin-top: 10px;">
+                    <thead>
+                        <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>Total de Faltas</th><th>% Frequência</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
 
             <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
                 <strong>Legenda:</strong> P = Presente | F = Faltou | N = Não Elegível (Grau Insuficiente)
             </div>
             
-            <h3 style="margin-top: 20px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
-            <table id="tabela-relatorio" style="margin-top: 10px;">
-                <thead>
-                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>Total de Faltas</th><th>% Frequência</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <h3 style="margin-top: 30px;">Histórico Detalhado por Sessão</h3>
-            <table id="tabela-historico-sessoes">
-                <thead>
-                    <tr><th>Data</th><th>Grau Sessão</th><th>Status</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
         </div>
 
 
@@ -557,7 +560,6 @@
         /* --- 7. MÓDULO DE RELATÓRIOS (CORREÇÃO DE ELEGIBILIDADE E DETALHES) --- */
 
         function carregarDadosEGerarRelatorio() {
-            // Garante que os arrays 'membros' e 'sessoes' estão atualizados
             carregarMembros(); 
             
             if (sessoes.length === 0) {
@@ -619,20 +621,101 @@
             exibirRelatorio(relatorio);
         }
 
-        function exibirRelatorio(dadosRelatorio) {
-            const tbodyResumo = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
-            const tbodyHistorico = document.getElementById('tabela-historico-sessoes').getElementsByTagName('tbody')[0];
-            tbodyResumo.innerHTML = ''; 
-            tbodyHistorico.innerHTML = ''; 
-            
-            // Seleciona o primeiro membro para exibir o histórico detalhado inicial
-            const primeiroMembro = Object.values(dadosRelatorio)[0];
-            if (primeiroMembro) {
-                 document.querySelector('#relatorios-section h3:last-of-type').textContent = `Histórico Detalhado para: ${primeiroMembro.nome}`;
-                 exibirHistoricoDetalhado(primeiroMembro.historico, primeiroMembro.nome);
+        // NOVO: Função para exportar a div de conteúdo para PDF
+        window.exportarParaPDF = function() {
+            const element = document.getElementById('relatorio-content');
+            const opt = {
+                margin: 0.5,
+                filename: 'Relatorio_Frequencia_Maconica.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } // Orientação Paisagem
+            };
+
+            // Certifique-se de que a tabela dinâmica foi gerada antes de exportar
+            if (element.innerHTML.includes('tabela-relatorio-dinamica')) {
+                 html2pdf().set(opt).from(element).save();
+            } else {
+                 alert('Por favor, gere o relatório antes de exportar.');
             }
+        }
+
+
+        function exibirRelatorio(dadosRelatorio) {
+            const tbodyResumo = document.getElementById('tabela-relatorio-resumo').getElementsByTagName('tbody')[0];
+            const tabelaDinamica = document.getElementById('tabela-relatorio-dinamica');
             
-            // 1. Preenche a Tabela de Resumo
+            tbodyResumo.innerHTML = ''; 
+            tabelaDinamica.innerHTML = ''; 
+            
+            // -------------------------------------------------------------
+            // 1. GERAÇÃO DA TABELA DINÂMICA (Layout Excel)
+            // -------------------------------------------------------------
+
+            // Cabeçalho Principal (Datas das Sessões e Status Final)
+            let headerHTML = '<thead><tr><th rowspan="2">Matrícula</th><th rowspan="2">Nome</th><th rowspan="2">Grau</th>';
+            let headerDatasHTML = '<tr>'; // Segunda linha do cabeçalho (Datas)
+            let headerStatusHTML = '<th colspan="3" style="text-align:center;">Resumo</th></tr>'; // Resumo (Sessões, Falta, Presença)
+            
+            // Array com as datas das sessões para garantir a ordem
+            const datasSessoes = sessoes.map(s => s.data).sort(); 
+
+            // Adiciona Colunas Dinâmicas de Sessão
+            datasSessoes.forEach(data => {
+                headerHTML += `<th colspan="1" style="text-align:center;">${data}</th>`;
+            });
+
+            // Fecha o cabeçalho principal e adiciona as colunas de resumo
+            headerHTML += `<th rowspan="2">Sessões Aptas</th><th rowspan="2">Presença</th><th rowspan="2">Falta</th><th rowspan="2">% PRESENÇA</th></tr>`;
+            
+            // Adiciona as Datas (Segunda Linha)
+            headerDatasHTML = '<tr><th>Matrícula</th><th>Nome</th><th>Grau</th>'; // Headers de Matrícula, Nome, Grau para a segunda linha (para alinhamento)
+            datasSessoes.forEach(data => {
+                // Pega a sessão pela data para obter o grau requerido
+                const sessao = sessoes.find(s => s.data === data);
+                headerDatasHTML += `<th style="text-align:center; font-size: 0.8em;">G: ${sessao.grau_requerido || 'N/A'}</th>`;
+            });
+            headerDatasHTML += '<th></th><th></th><th></th><th></th></tr>'; // Fecha a segunda linha
+
+            tabelaDinamica.innerHTML = headerHTML + headerStatusHTML; // Junta os cabeçalhos
+
+            // -------------------------------------------------------------
+            // 2. GERAÇÃO DO CORPO DA TABELA DINÂMICA
+            // -------------------------------------------------------------
+
+            const tbodyDinamica = tabelaDinamica.createTBody();
+            
+            Object.values(dadosRelatorio).forEach(dados => {
+                const row = tbodyDinamica.insertRow();
+
+                // Colunas de Identificação
+                row.insertCell().textContent = dados.matricula;
+                row.insertCell().textContent = dados.nome;
+                row.insertCell().textContent = dados.grau;
+                
+                // Colunas Dinâmicas de Status
+                datasSessoes.forEach(data => {
+                    const historicoSessao = dados.historico.find(h => h.data === data);
+                    const status = historicoSessao ? historicoSessao.status : '';
+                    const cell = row.insertCell();
+                    cell.textContent = status;
+                    cell.style.textAlign = 'center';
+                });
+
+                // Colunas de Resumo Final
+                const totalAptas = dados.total_aptas;
+                const percentagem = totalAptas > 0 ? (dados.presencas / totalAptas) * 100 : 0;
+                
+                row.insertCell().textContent = totalAptas;
+                row.insertCell().textContent = dados.presencas;
+                row.insertCell().textContent = dados.faltas;
+                row.insertCell().textContent = `${percentagem.toFixed(2)}%`;
+            });
+            
+            
+            // -------------------------------------------------------------
+            // 3. PREENCHE A TABELA DE RESUMO (A tabela antiga, agora secundária)
+            // -------------------------------------------------------------
             Object.values(dadosRelatorio).forEach(dados => {
                 const row = tbodyResumo.insertRow();
                 const totalAptas = dados.total_aptas;
@@ -649,24 +732,11 @@
                 // Adiciona um listener para mostrar o histórico ao clicar
                 row.style.cursor = 'pointer';
                 row.style.backgroundColor = '#e6f7ff'; 
-                row.onclick = () => exibirHistoricoDetalhado(dados.historico, dados.nome);
+                row.onclick = () => alert(`Histórico Completo na Tabela Acima! Irmão: ${dados.nome}`);
             });
 
-            alert('Relatório de Frequência Gerado! Clique em um Irmão para ver o histórico.');
-        }
 
-        function exibirHistoricoDetalhado(historico, nomeMembro) {
-            const tbody = document.getElementById('tabela-historico-sessoes').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = '';
-            
-            document.querySelector('#relatorios-section h3:last-of-type').textContent = `Histórico Detalhado para: ${nomeMembro}`;
-            
-            historico.forEach(h => {
-                const row = tbody.insertRow();
-                row.insertCell().textContent = h.data;
-                row.insertCell().textContent = `Grau ${h.grau_sessao}`;
-                row.insertCell().textContent = h.status;
-            });
+            alert('Relatório de Frequência Gerado! (Layout Dinâmico)');
         }
 
 

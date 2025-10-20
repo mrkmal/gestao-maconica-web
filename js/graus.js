@@ -1,36 +1,42 @@
 (function() {
-    // Garante que o objeto global de inicializadores exista
     if (!window.moduleInitializers) {
         window.moduleInitializers = {};
     }
 
-    // Define a função que sabe como inicializar o módulo de Graus
     window.moduleInitializers.graus = function() {
         console.log("Módulo de Graus inicializado!");
 
         const db = firebase.firestore();
         const form = document.getElementById('form-graus');
+        const nomeInput = document.getElementById('nome'); // Pega o campo de input pelo ID
         const tableBody = document.querySelector('#graus-table tbody');
 
-        if (!form || !tableBody) {
-            console.error("Elementos essenciais do módulo de graus não foram encontrados.");
+        if (!form || !tableBody || !nomeInput) {
+            console.error("Elementos essenciais (formulário, input ou tabela) do módulo de graus não foram encontrados.");
             return;
         }
 
-        // Listener para adicionar novos graus
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const nome = form['nome'].value;
+            const nome = nomeInput.value; // Pega o valor do campo de input
+
+            if (!nome) {
+                alert("Por favor, digite o nome do grau.");
+                return;
+            }
+            
+            console.log("Tentando adicionar grau:", nome);
             db.collection('graus').add({ nome: nome })
                 .then(() => {
+                    console.log("Grau adicionado com sucesso!");
                     form.reset();
                 })
                 .catch(err => console.error("Erro ao adicionar grau: ", err));
         });
 
-        // Listener para exibir e atualizar os graus em tempo real
+        // Listener para exibir e atualizar os graus em tempo real (código inalterado)
         db.collection('graus').orderBy('nome').onSnapshot(snapshot => {
-            tableBody.innerHTML = ''; // Limpa a tabela antes de redesenhar
+            tableBody.innerHTML = ''; 
             snapshot.forEach(doc => {
                 const grau = doc.data();
                 const id = doc.id;
@@ -44,7 +50,6 @@
                 tableBody.appendChild(row);
             });
 
-            // Adiciona os listeners para os botões de excluir
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const id = e.target.getAttribute('data-id');
@@ -54,7 +59,6 @@
                 });
             });
             
-            // Adiciona os listeners para os botões de editar
             document.querySelectorAll('.edit-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const id = e.target.getAttribute('data-id');
@@ -64,7 +68,6 @@
                     }
                 });
             });
-
         });
     };
 })();

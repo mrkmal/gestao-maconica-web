@@ -1,43 +1,49 @@
 (function() {
-    // Garante que o objeto global de inicializadores exista
     if (!window.moduleInitializers) {
         window.moduleInitializers = {};
     }
 
-    // Define a função que sabe como inicializar o módulo de Maçons
     window.moduleInitializers.macons = function() {
         console.log("Módulo de Maçons inicializado!");
 
         const db = firebase.firestore();
         const form = document.getElementById('form-macons');
+        const nomeInput = document.getElementById('nome-macon');
+        const grauInput = document.getElementById('grau-macon');
+        const lojaInput = document.getElementById('loja-macon');
         const tableBody = document.querySelector('#macons-table tbody');
 
-        if (!form || !tableBody) {
+        if (!form || !tableBody || !nomeInput || !grauInput || !lojaInput) {
             console.error("Elementos essenciais do módulo de maçons não foram encontrados.");
             return;
         }
 
-        // Listener para adicionar novos maçons
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const nome = form['nome-macon'].value;
-            const grau = form['grau-macon'].value;
-            const loja = form['loja-macon'].value;
+            const nome = nomeInput.value;
+            const grau = grauInput.value;
+            const loja = lojaInput.value;
 
+            if (!nome || !grau || !loja) {
+                alert("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            console.log("Adicionando maçom:", { nome, grau, loja });
             db.collection('macons').add({ 
                 nome: nome,
                 grau: grau,
                 loja: loja
             })
             .then(() => {
+                console.log("Maçom adicionado com sucesso.");
                 form.reset();
             })
             .catch(err => console.error("Erro ao adicionar maçom: ", err));
         });
 
-        // Listener para exibir e atualizar os maçons em tempo real
         db.collection('macons').orderBy('nome').onSnapshot(snapshot => {
-            tableBody.innerHTML = ''; // Limpa a tabela
+            tableBody.innerHTML = '';
             snapshot.forEach(doc => {
                 const macon = doc.data();
                 const id = doc.id;
@@ -55,7 +61,6 @@
                 tableBody.appendChild(row);
             });
 
-            // Adiciona listeners para os botões de exclusão
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const id = e.target.getAttribute('data-id');
@@ -65,21 +70,27 @@
                 });
             });
 
-            // Adiciona listeners para os botões de edição
             document.querySelectorAll('.edit-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const id = e.target.getAttribute('data-id');
-                    const novoNome = prompt("Digite o novo nome:");
-                    const novoGrau = prompt("Digite o novo grau:");
-                    const novaLoja = prompt("Digite a nova loja:");
+                    const maconDoc = db.collection('macons').doc(id);
 
-                    if (novoNome && novoGrau && novaLoja) {
-                        db.collection('macons').doc(id).update({ 
-                            nome: novoNome, 
-                            grau: novoGrau, 
-                            loja: novaLoja 
-                        });
-                    }
+                    maconDoc.get().then(doc => {
+                        if (doc.exists) {
+                            const macon = doc.data();
+                            const novoNome = prompt("Digite o novo nome:", macon.nome);
+                            const novoGrau = prompt("Digite o novo grau:", macon.grau);
+                            const novaLoja = prompt("Digite a nova loja:", macon.loja);
+
+                            if (novoNome !== null && novoGrau !== null && novaLoja !== null) {
+                                maconDoc.update({ 
+                                    nome: novoNome,
+                                    grau: novoGrau,
+                                    loja: novaLoja
+                                });
+                            }
+                        }
+                    });
                 });
             });
         });

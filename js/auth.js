@@ -1,18 +1,18 @@
 (function() {
-    const loginForm = document.getElementById('login-form');
+    const loginButton = document.getElementById('login-button');
     const logoutButton = document.getElementById('logout-button');
     const loginContainer = document.getElementById('login-container');
     const mainContentWrapper = document.getElementById('main-content-wrapper');
 
-    if (!loginForm) {
-        console.error('FATAL: Formulário de login com id="login-form" não encontrado!');
+    if (!loginButton) {
+        console.error('FATAL: Botão de login com id="login-button" não encontrado!');
         return;
     }
 
-    // Listener para o formulário de login (versão robusta)
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        console.log("Evento de submit do formulário de login disparado.");
+    // Nova abordagem: Listener de CLIQUE diretamente no botão
+    loginButton.addEventListener('click', (e) => {
+        e.preventDefault(); // Impede o comportamento padrão do botão (que é submeter o form)
+        console.log("Evento de CLIQUE no botão de login disparado.");
 
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
@@ -36,8 +36,8 @@
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then(userCredential => {
-                // O sucesso aqui irá disparar o onAuthStateChanged, que cuidará da UI.
                 console.log("Login bem-sucedido para o usuário:", userCredential.user.email);
+                // O onAuthStateChanged vai cuidar de mostrar/esconder os containers
             })
             .catch(error => {
                 console.error("Erro do Firebase ao tentar logar:", error);
@@ -52,10 +52,9 @@
         });
     }
 
-    // Observador do estado de autenticação do Firebase
+    // Observador do estado de autenticação do Firebase (sem alterações aqui)
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
-            // Usuário está logado.
             console.log('onAuthStateChanged: Usuário autenticado, exibindo conteúdo principal.');
             loginContainer.style.display = 'none';
             mainContentWrapper.style.display = 'block';
@@ -63,7 +62,6 @@
                 window.initializeApp();
             }
         } else {
-            // Usuário está deslogado.
             console.log('onAuthStateChanged: Nenhum usuário autenticado, exibindo tela de login.');
             loginContainer.style.display = 'block';
             mainContentWrapper.style.display = 'none';

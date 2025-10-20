@@ -5,55 +5,55 @@ window.initializeApp = function() {
         fetch(modulePath)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Erro ao carregar o módulo: ${response.statusText}`);
+                    throw new Error(`Módulo não encontrado em: ${modulePath}`);
                 }
                 return response.text();
             })
             .then(html => {
-                // Limpa o conteúdo antigo e remove scripts antigos para evitar duplicatas
-                content.innerHTML = '';
+                // Usa um elemento temporário para parsear o HTML recebido
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Extrai o script do HTML do módulo
+                const oldScript = doc.querySelector('script');
+                
+                // Insere apenas o corpo do HTML no conteúdo principal
+                content.innerHTML = doc.body.innerHTML;
 
-                // Cria um container temporário para manipular o HTML recebido
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-
-                // Encontra todos os scripts no HTML carregado
-                const scripts = tempDiv.querySelectorAll('script');
-
-                // Adiciona o HTML (sem os scripts) ao DOM
-                // Move todos os filhos do tempDiv para o elemento de conteúdo
-                while (tempDiv.firstChild) {
-                    content.appendChild(tempDiv.firstChild);
-                }
-
-                // Para cada script encontrado, cria um novo elemento de script e o anexa
-                // Isso força o navegador a carregar e executar o script
-                scripts.forEach(oldScript => {
+                // Se um script foi encontrado, cria um novo para forçar a execução
+                if (oldScript) {
                     const newScript = document.createElement('script');
-                    // Copia o atributo 'src' se ele existir
+                    
+                    // Copia o conteúdo (para scripts inline) ou o src
                     if (oldScript.src) {
+                        // Se o script tiver um src, é crucial que o caminho esteja correto
+                        // e que o servidor possa encontrá-lo.
                         newScript.src = oldScript.src;
-                        // Adiciona ao final do body para garantir que o DOM esteja pronto
-                        document.body.appendChild(newScript).onload = () => {
-                            // Opcional: remover o script após a execução
-                            document.body.removeChild(newScript);
-                        };
                     } else {
-                        // Copia o conteúdo para scripts inline
                         newScript.textContent = oldScript.textContent;
-                        content.appendChild(newScript);
                     }
-                });
+                    
+                    // Remove o script antigo (se existir) para evitar duplicação de lógica
+                    const existingScript = document.getElementById('module-script');
+                    if (existingScript) {
+                        existingScript.remove();
+                    }
+                    newScript.id = 'module-script';
+
+                    // Adiciona o novo script ao final do body para executá-lo
+                    document.body.appendChild(newScript);
+                }
             })
             .catch(error => {
-                console.error('[Main] Erro crítico ao carregar módulo:', error);
-                content.innerHTML = '<p>Erro ao carregar o conteúdo. Verifique o console para mais detalhes.</p>';
+                console.error('Falha crítica ao carregar módulo:', error);
+                content.innerHTML = `<p style="color: red;"><b>Erro:</b> ${error.message}. O conteúdo não pôde ser carregado.</p>`;
             });
     }
 
     // Carregar o primeiro módulo por padrão
     loadModule('modules/graus.html');
 
+    // Configura os links de navegação
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', function(event) {

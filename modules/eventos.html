@@ -1,23 +1,22 @@
 <h2>Gestão de Eventos</h2>
 
 <form id="form-eventos">
-    <input type="text" id="nome" placeholder="Nome do Evento" required>
-    <input type="date" id="data" required>
-    <button type="submit">Adicionar Evento</button>
+    <input type="text" id="nome-evento" placeholder="Nome do Evento" required>
+    <input type="date" id="data-evento" required>
+    <input type="text" id="local-evento" placeholder="Local do Evento" required>
+    <button type="submit">Criar Evento</button>
 </form>
 
 <table id="eventos-table">
     <thead>
         <tr>
-            <th>Nome</th>
+            <th>Evento</th>
             <th>Data</th>
-            <th>Editar</th>
-            <th>Excluir</th>
+            <th>Local</th>
+            <th>Ações</th>
         </tr>
     </thead>
     <tbody>
         <!-- Eventos serão listados aqui -->
     </tbody>
 </table>
-
-<script src="js/eventos.js"></script>

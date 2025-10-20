@@ -1,56 +1,79 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const db = firebase.firestore();
+(function() {
+    if (!window.moduleInitializers) {
+        window.moduleInitializers = {};
+    }
 
-    const form = document.getElementById('form-reunioes');
-    const table = document.getElementById('reunioes-table').getElementsByTagName('tbody')[0];
+    window.moduleInitializers.reunioes = function() {
+        console.log("Módulo de Reuniões inicializado!");
 
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+        const db = firebase.firestore();
+        const form = document.getElementById('form-reunioes');
+        const tableBody = document.querySelector('#reunioes-table tbody');
 
-        const data = document.getElementById('data').value;
-        const pauta = document.getElementById('pauta').value;
+        if (!form || !tableBody) {
+            console.error("Elementos essenciais do módulo de reuniões não foram encontrados.");
+            return;
+        }
 
-        db.collection("reunioes").add({
-            data: data,
-            pauta: pauta,
-        })
-        .then((docRef) => {
-            console.log("Document written with ID: ", docRef.id);
-            form.reset();
-            loadReunioes();
-        })
-        .catch((error) => {
-            console.error("Error adding document: ", error);
+        // Adicionar nova reunião
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.collection('reunioes').add({
+                data: form['data-reuniao'].value,
+                pauta: form['pauta-reuniao'].value,
+                local: form['local-reuniao'].value
+            })
+            .then(() => form.reset())
+            .catch(err => console.error("Erro ao agendar reunião: ", err));
         });
-    });
 
-    function loadReunioes() {
-        db.collection("reunioes").onSnapshot((querySnapshot) => {
-            table.innerHTML = '';
-            querySnapshot.forEach((doc) => {
+        // Carregar e ouvir por reuniões
+        db.collection('reunioes').orderBy('data', 'desc').onSnapshot(snapshot => {
+            tableBody.innerHTML = '';
+            snapshot.forEach(doc => {
                 const reuniao = doc.data();
-                const row = table.insertRow();
-                row.innerHTML = `<td>${reuniao.data}</td>
-                                 <td>${reuniao.pauta}</td>
-                                 <td><button onclick="editReuniao('${doc.id}')">Editar</button></td>
-                                 <td><button onclick="deleteReuniao('${doc.id}')">Excluir</button></td>`;
+                const id = doc.id;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(reuniao.data + 'T00:00:00').toLocaleDateString()}</td>
+                    <td>${reuniao.pauta}</td>
+                    <td>${reuniao.local}</td>
+                    <td>
+                        <button class="edit-btn" data-id="${id}">Editar</button>
+                        <button class="delete-btn" data-id="${id}">Excluir</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Listeners para exclusão
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    if (confirm('Tem certeza que deseja cancelar esta reunião?')) {
+                        db.collection('reunioes').doc(id).delete();
+                    }
+                });
+            });
+
+            // Listeners para edição
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const novaData = prompt("Digite a nova data (AAAA-MM-DD):");
+                    const novaPauta = prompt("Digite a nova pauta:");
+                    const novoLocal = prompt("Digite o novo local:");
+
+                    if (novaData && novaPauta && novoLocal) {
+                        db.collection('reunioes').doc(id).update({ 
+                            data: novaData, 
+                            pauta: novaPauta, 
+                            local: novoLocal 
+                        });
+                    }
+                });
             });
         });
-    }
-
-    window.editReuniao = function(id) {
-        const newData = prompt("Nova data para a reunião:");
-        const newPauta = prompt("Nova pauta para a reunião:");
-        if (newData && newPauta) {
-            db.collection("reunioes").doc(id).update({ data: newData, pauta: newPauta });
-        }
-    }
-
-    window.deleteReuniao = function(id) {
-        if (confirm("Tem certeza que deseja excluir esta reunião?")) {
-            db.collection("reunioes").doc(id).delete();
-        }
-    }
-
-    loadReunioes();
-});
+    };
+})();

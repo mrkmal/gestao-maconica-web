@@ -1,56 +1,79 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const db = firebase.firestore();
+(function() {
+    if (!window.moduleInitializers) {
+        window.moduleInitializers = {};
+    }
 
-    const form = document.getElementById('form-eventos');
-    const table = document.getElementById('eventos-table').getElementsByTagName('tbody')[0];
+    window.moduleInitializers.eventos = function() {
+        console.log("Módulo de Eventos inicializado!");
 
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+        const db = firebase.firestore();
+        const form = document.getElementById('form-eventos');
+        const tableBody = document.querySelector('#eventos-table tbody');
 
-        const nome = document.getElementById('nome').value;
-        const data = document.getElementById('data').value;
+        if (!form || !tableBody) {
+            console.error("Elementos essenciais do módulo de eventos não foram encontrados.");
+            return;
+        }
 
-        db.collection("eventos").add({
-            nome: nome,
-            data: data,
-        })
-        .then((docRef) => {
-            console.log("Document written with ID: ", docRef.id);
-            form.reset();
-            loadEventos();
-        })
-        .catch((error) => {
-            console.error("Error adding document: ", error);
+        // Adicionar novo evento
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.collection('eventos').add({
+                nome: form['nome-evento'].value,
+                data: form['data-evento'].value,
+                local: form['local-evento'].value
+            })
+            .then(() => form.reset())
+            .catch(err => console.error("Erro ao criar evento: ", err));
         });
-    });
 
-    function loadEventos() {
-        db.collection("eventos").onSnapshot((querySnapshot) => {
-            table.innerHTML = '';
-            querySnapshot.forEach((doc) => {
+        // Carregar e ouvir por eventos
+        db.collection('eventos').orderBy('data', 'desc').onSnapshot(snapshot => {
+            tableBody.innerHTML = '';
+            snapshot.forEach(doc => {
                 const evento = doc.data();
-                const row = table.insertRow();
-                row.innerHTML = `<td>${evento.nome}</td>
-                                 <td>${evento.data}</td>
-                                 <td><button onclick="editEvento('${doc.id}')">Editar</button></td>
-                                 <td><button onclick="deleteEvento('${doc.id}')">Excluir</button></td>`;
+                const id = doc.id;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${evento.nome}</td>
+                    <td>${new Date(evento.data + 'T00:00:00').toLocaleDateString()}</td>
+                    <td>${evento.local}</td>
+                    <td>
+                        <button class="edit-btn" data-id="${id}">Editar</button>
+                        <button class="delete-btn" data-id="${id}">Excluir</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Listeners para exclusão
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    if (confirm('Tem certeza que deseja cancelar este evento?')) {
+                        db.collection('eventos').doc(id).delete();
+                    }
+                });
+            });
+
+            // Listeners para edição
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const novoNome = prompt("Digite o novo nome do evento:");
+                    const novaData = prompt("Digite a nova data (AAAA-MM-DD):");
+                    const novoLocal = prompt("Digite o novo local:");
+
+                    if (novoNome && novaData && novoLocal) {
+                        db.collection('eventos').doc(id).update({ 
+                            nome: novoNome, 
+                            data: novaData, 
+                            local: novoLocal 
+                        });
+                    }
+                });
             });
         });
-    }
-
-    window.editEvento = function(id) {
-        const newName = prompt("Novo nome para o evento:");
-        const newData = prompt("Nova data para o evento:");
-        if (newName && newData) {
-            db.collection("eventos").doc(id).update({ nome: newName, data: newData });
-        }
-    }
-
-    window.deleteEvento = function(id) {
-        if (confirm("Tem certeza que deseja excluir este evento?")) {
-            db.collection("eventos").doc(id).delete();
-        }
-    }
-
-    loadEventos();
-});
+    };
+})();

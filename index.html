@@ -4,36 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão Maçônica</title>
-    <link rel="stylesheet" href="css/styles.css"> <!-- Adicionado o CSS -->
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <h1>Gestão Maçônica</h1>
-        <nav>
-            <ul>
-                <li><a href="#" class="nav-link" data-module="modules/graus.html">Graus</a></li>
-                <li><a href="#" class="nav-link" data-module="modules/macons.html">Maçons</a></li>
-                <li><a href="#" class="nav-link" data-module="modules/reunioes.html">Reuniões</a></li>
-                <li><a href="#" class="nav-link" data-module="modules/eventos.html">Eventos</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <main id="content">
-        <!-- O conteúdo dos módulos será carregado aqui -->
-    </main>
+    <!-- A tela de login agora é visível por padrão -->
+    <div id="login-container">
+        <h2>Login</h2>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
 
-    <footer>
-        <p>&copy; 2024 Gestão Maçônica. Todos os direitos reservados.</p>
-    </footer>
+    <!-- O conteúdo principal continua escondido por padrão -->
+    <div id="main-content-wrapper" style="display: none;">
+        <header>
+            <h1>Gestão Maçônica</h1>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link" data-module="modules/graus.html">Graus</a></li>
+                    <li><a href="#" class="nav-link" data-module="modules/macons.html">Maçons</a></li>
+                    <li><a href="#" class="nav-link" data-module="modules/reunioes.html">Reuniões</a></li>
+                    <li><a href="#" class="nav-link" data-module="modules/eventos.html">Eventos</a></li>
+                </ul>
+            </nav>
+            <button id="logout-button">Sair</button>
+        </header>
+
+        <main id="content">
+            <!-- O conteúdo dos módulos será carregado aqui -->
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Gestão Maçônica. Todos os direitos reservados.</p>
+        </footer>
+    </div>
 
     <!-- Scripts Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="js/firebase-config.js"></script>
 
-    <!-- Script principal da aplicação -->
-    <script src="js/main.js"></script> <!-- Adicionado o JS principal -->
+    <!-- Scripts da aplicação -->
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
 
 </body>
 </html>

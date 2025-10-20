@@ -1,12 +1,12 @@
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+// Substitua estas configurações pelas do seu projeto Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyCk-L6r_p9SPxx_WmuPnzEMcEAlDfLlbJk",
-  authDomain: "gestao-maconica.firebaseapp.com",
-  projectId: "gestao-maconica",
-  storageBucket: "gestao-maconica.firebasestorage.app",
-  messagingSenderId: "57851106083",
-  appId: "1:57851106083:web:0572445f0f856d22347296",
-  measurementId: "G-F1ZZ7XB7DQ"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 // Inicializa o Firebase

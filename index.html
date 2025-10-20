@@ -454,9 +454,9 @@
         }
 
 
-        /* --- 6. MÓDULO DE REGISTRO DE SESSÕES (COM CONTROLE DE GRAU) --- */
+/* --- 6. MÓDULO DE REGISTO DE SESSÕES (COM EDIÇÃO) --- */
         
-        function popularGrausDropdownSessao() {
+function popularGrausDropdownSessao() {
             carregarGraus(); 
             
             const selectGrau = document.getElementById('grau-sessao-requerido');
@@ -480,10 +480,36 @@
             });
         }
         
+        // NOVO: Volta para a lista de sessões registradas
+        window.voltarParaListaSessoes = function() {
+            sessaoAtualParaFrequencia = null; // Limpa o estado de edição
+            document.getElementById('frequencia-form').style.display = 'none';
+            document.getElementById('form-sessao').style.display = 'block';
+        }
+
+        // NOVO: Inicia a visualização e edição da sessão
+        window.visualizarSessao = function(sessaoId) {
+            const sessao = sessoes.find(s => s.id === sessaoId);
+            if (!sessao) return;
+
+            sessaoAtualParaFrequencia = { ...sessao }; // Clona para edição
+
+            // 1. Encontra o número do grau e filtra os membros
+            const grauRequerido = sessao.grau_requerido;
+            const membrosElegiveis = membros.filter(m => {
+                return m.numero_grau && m.numero_grau >= grauRequerido;
+            });
+            
+            // 2. Prepara e exibe o formulário com dados pré-selecionados
+            prepararFormularioFrequencia(sessao, membrosElegiveis, true); // O 'true' indica MODO EDIÇÃO
+        }
+
+
+        // ALTERADO: Evento de Criação de Sessão
         document.getElementById('form-sessao').addEventListener('submit', function(e) {
             e.preventDefault();
             const data = document.getElementById('data-sessao').value;
-            const tipo = document.getElementById('tipo-sessao').value; // Mantido para salvar no DB
+            const tipo = document.getElementById('tipo-sessao').value;
             const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
             
             if (isNaN(grauRequeridoNumero)) {
@@ -492,38 +518,50 @@
             }
 
             sessaoAtualParaFrequencia = { data, tipo, grau_requerido: grauRequeridoNumero, frequencia: {} };
-            prepararFormularioFrequencia(sessaoAtualParaFrequencia);
+            
+            const membrosElegiveis = membros.filter(m => m.numero_grau && m.numero_grau >= grauRequeridoNumero);
+            prepararFormularioFrequencia(sessaoAtualParaFrequencia, membrosElegiveis, false); // MODO CRIAÇÃO
         });
 
-        // FUNÇÃO CRÍTICA: FILTRO POR GRAU
-        function prepararFormularioFrequencia(sessao) {
+
+        // ALTERADO: Função de Preparação para ser usada por Criação e Edição
+        function prepararFormularioFrequencia(sessao, membrosElegiveis, isEditing) {
             
-            const grauRequerido = sessao.grau_requerido;
-            
-            const membrosElegiveis = membros.filter(m => {
-                return m.numero_grau && m.numero_grau >= grauRequerido;
-            });
-            
-            if (membrosElegiveis.length === 0) { 
-                alert(`Nenhum irmão é elegível para esta sessão (Grau Mínimo: ${grauRequerido}).`); 
+            if (membrosElegiveis.length === 0 && !isEditing) { 
+                alert(`Nenhum irmão é elegível para esta sessão.`); 
                 document.getElementById('form-sessao').style.display = 'block';
                 return; 
             }
 
-            document.getElementById('sessao-data-display').textContent = `${sessao.data} (${sessao.tipo} - Grau Mínimo: ${grauRequerido})`;
+            document.getElementById('sessao-data-display').textContent = `${sessao.data} (${sessao.tipo} - Grau Mínimo: ${sessao.grau_requerido})`;
             const tbodyFrequencia = document.getElementById('tabela-frequencia').getElementsByTagName('tbody')[0];
             tbodyFrequencia.innerHTML = ''; 
+            
+            // Define o texto do botão salvar
+            document.querySelector('#frequencia-form button[onclick="salvarFrequencia()"]').textContent = isEditing ? 'Atualizar Frequência' : 'Salvar Frequência';
+
 
             membrosElegiveis.forEach(m => { 
                 const row = tbodyFrequencia.insertRow();
+                const isPresent = sessao.frequencia[m.matricula] === true;
+                const statusExistente = sessao.frequencia[m.matricula]; // true, false ou undefined
+                
                 row.insertCell().textContent = `${m.nome} (G: ${m.numero_grau})`;
+                
+                // Opção PRESENTE
                 const cellPresenca = row.insertCell();
                 const inputPresenca = document.createElement('input');
-                inputPresenca.type = 'radio'; inputPresenca.name = 'frequencia_' + m.matricula; inputPresenca.value = 'presente'; inputPresenca.checked = true;
+                inputPresenca.type = 'radio'; inputPresenca.name = 'frequencia_' + m.matricula; inputPresenca.value = 'presente'; 
+                // Seleciona se já estava presente OU se for criação e for elegível (padrão)
+                inputPresenca.checked = (statusExistente === true) || (statusExistente === undefined && !isEditing);
                 cellPresenca.appendChild(inputPresenca);
+                
+                // Opção FALTA
                 const cellFalta = row.insertCell();
                 const inputFalta = document.createElement('input');
                 inputFalta.type = 'radio'; inputFalta.name = 'frequencia_' + m.matricula; inputFalta.value = 'ausente';
+                // Seleciona se já estava faltante
+                inputFalta.checked = statusExistente === false;
                 cellFalta.appendChild(inputFalta);
             });
 
@@ -531,24 +569,53 @@
             document.getElementById('form-sessao').style.display = 'none';
         }
 
+        // ALTERADO: Lógica de Salvamento para Criar OU Atualizar
         function salvarFrequencia() {
             const formFrequencia = document.getElementById('form-frequencia');
+            let novaFrequencia = {};
+            
+            // 1. Coleta o estado da frequência (apenas dos elegíveis)
             membros.forEach(m => {
                 const radios = formFrequencia.elements['frequencia_' + m.matricula];
                 if (radios) { 
-                     sessaoAtualParaFrequencia.frequencia[m.matricula] = (radios.value === 'presente');
+                     novaFrequencia[m.matricula] = (radios.value === 'presente');
                 }
             });
 
-            db.collection("sessoes").add(sessaoAtualParaFrequencia)
-                .then(() => { alert('Frequência salva!'); 
-                    document.getElementById('frequencia-form').style.display = 'none';
-                    document.getElementById('form-sessao').style.display = 'block';
-                    document.getElementById('form-sessao').reset();
-                })
-                .catch((error) => { console.error(error); alert("Erro ao salvar frequência."); });
+            // 2. Atualiza o objeto da sessão atual
+            sessaoAtualParaFrequencia.frequencia = novaFrequencia;
+            
+            // 3. Decide se CRIA (sem ID) ou ATUALIZA (com ID)
+            if (sessaoAtualParaFrequencia.id) {
+                // ATUALIZAÇÃO
+                const id = sessaoAtualParaFrequencia.id;
+                delete sessaoAtualParaFrequencia.id; // Remove o ID para não salvar no documento
+                
+                db.collection("sessoes").doc(id).update(sessaoAtualParaFrequencia)
+                    .then(() => {
+                        alert(`Sessão de ${sessaoAtualParaFrequencia.data} atualizada!`);
+                        voltarParaListaSessoes();
+                    })
+                    .catch((error) => { console.error(error); alert("Erro ao atualizar sessão."); });
+            
+            } else {
+                // CRIAÇÃO
+                db.collection("sessoes").add(sessaoAtualParaFrequencia)
+                    .then(() => { alert('Frequência salva!'); voltarParaListaSessoes(); })
+                    .catch((error) => { console.error(error); alert("Erro ao salvar frequência."); });
+            }
+        }
+        
+        // NOVO: Função para exclusão de sessão
+        function excluirSessao(sessaoId, dataSessao) {
+            if (!confirm(`Excluir a sessão de ${dataSessao}? Esta ação é irreversível e afetará os relatórios!`)) return;
+            db.collection("sessoes").doc(sessaoId).delete()
+                .then(() => { alert(`Sessão de ${dataSessao} excluída!`); })
+                .catch((error) => { alert(`Erro ao tentar excluir a sessão!`); console.error(error); });
         }
 
+
+        // ALTERADO: Exibe os botões Ver/Alt e Excluir
         function exibirSessoes() {
             const tbody = document.getElementById('tabela-sessoes').getElementsByTagName('tbody')[0];
             tbody.innerHTML = ''; 
@@ -557,25 +624,25 @@
                 
                 const nomeGrau = graus.find(g => g.numero === s.grau_requerido)?.nome || `Grau ${s.grau_requerido}`;
                 
-                // Calcula Totais para a Tabela de Sessões Registradas
                 const totalPresentes = Object.values(s.frequencia).filter(p => p === true).length;
                 const totalAptos = membros.filter(m => m.numero_grau >= s.grau_requerido).length;
                 const percentagem = totalAptos > 0 ? (totalPresentes / totalAptos) * 100 : 0;
                 
                 // Colunas
                 row.insertCell().textContent = s.data;
-                row.insertCell().textContent = s.grau_requerido; // (SOLICITADO: Número do Grau)
+                row.insertCell().textContent = nomeGrau; 
                 row.insertCell().textContent = totalPresentes;
                 row.insertCell().textContent = totalAptos;
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
                 
                 // Coluna Ações
                 const cellAcoes = row.insertCell(); 
+                
                 const btnVisualizar = document.createElement('button');
                 btnVisualizar.textContent = 'Ver/Alt';
                 btnVisualizar.className = 'action-btn';
                 btnVisualizar.style.backgroundColor = '#17a2b8';
-                btnVisualizar.onclick = () => alert('Funcionalidade de Alterar Sessão em breve!');
+                btnVisualizar.onclick = () => visualizarSessao(s.id); // CHAMA A NOVA FUNÇÃO DE EDIÇÃO
                 cellAcoes.appendChild(btnVisualizar);
 
                 const btnExcluir = document.createElement('button');
@@ -587,13 +654,7 @@
             });
         }
         
-        function excluirSessao(sessaoId, dataSessao) {
-            if (!confirm(`Excluir a sessão de ${dataSessao}? Esta ação é irreversível e afetará os relatórios!`)) return;
-            db.collection("sessoes").doc(sessaoId).delete()
-                .then(() => { alert(`Sessão de ${dataSessao} excluída!`); })
-                .catch((error) => { alert(`Erro ao tentar excluir a sessão!`); console.error(error); });
-        }
-
+        // ... (o restante do script permanece igual) ...
 
         /* --- 7. MÓDULO DE RELATÓRIOS (CORREÇÃO DE ELEGIBILIDADE E DETALHES) --- */
 

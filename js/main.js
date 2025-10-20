@@ -2,64 +2,67 @@ window.initializeApp = function() {
     const content = document.getElementById('content');
 
     function loadModule(modulePath) {
+        // Remove o script do módulo anterior para evitar execuções duplicadas
+        const oldModuleScript = document.getElementById('module-script');
+        if (oldModuleScript) {
+            oldModuleScript.remove();
+        }
+
         fetch(modulePath)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Módulo não encontrado em: ${modulePath}`);
+                    throw new Error(`O arquivo do módulo não foi encontrado: ${modulePath}`);
                 }
                 return response.text();
             })
             .then(html => {
-                // Usa um elemento temporário para parsear o HTML recebido
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Extrai o script do HTML do módulo
-                const oldScript = doc.querySelector('script');
-                
-                // Insere apenas o corpo do HTML no conteúdo principal
-                content.innerHTML = doc.body.innerHTML;
+                // Cria um container temporário na memória para analisar o HTML recebido
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
 
-                // Se um script foi encontrado, cria um novo para forçar a execução
-                if (oldScript) {
+                // Encontra a tag de script dentro do HTML carregado
+                const scriptTag = tempDiv.querySelector('script');
+                
+                // Se encontrou uma tag de script, remove ela do container temporário
+                // para que não seja inserida na página de forma inativa.
+                if (scriptTag) {
+                    scriptTag.remove();
+                }
+
+                // Limpa o conteúdo principal e insere o novo HTML (já sem o script)
+                content.innerHTML = tempDiv.innerHTML;
+
+                // Se um script foi encontrado, cria um novo elemento de script
+                // e o adiciona ao final do <body>. Isso força o navegador a executá-lo.
+                if (scriptTag) {
                     const newScript = document.createElement('script');
-                    
-                    // Copia o conteúdo (para scripts inline) ou o src
-                    if (oldScript.src) {
-                        // Se o script tiver um src, é crucial que o caminho esteja correto
-                        // e que o servidor possa encontrá-lo.
-                        newScript.src = oldScript.src;
-                    } else {
-                        newScript.textContent = oldScript.textContent;
-                    }
-                    
-                    // Remove o script antigo (se existir) para evitar duplicação de lógica
-                    const existingScript = document.getElementById('module-script');
-                    if (existingScript) {
-                        existingScript.remove();
-                    }
-                    newScript.id = 'module-script';
+                    newScript.id = 'module-script'; // ID para fácil remoção posterior
 
-                    // Adiciona o novo script ao final do body para executá-lo
+                    if (scriptTag.src) {
+                        // Se o script original tinha um caminho (src), copia o caminho
+                        newScript.src = scriptTag.src;
+                    } else {
+                        // Se era um script inline, copia o conteúdo
+                        newScript.textContent = scriptTag.textContent;
+                    }
+                    
                     document.body.appendChild(newScript);
                 }
             })
             .catch(error => {
-                console.error('Falha crítica ao carregar módulo:', error);
-                content.innerHTML = `<p style="color: red;"><b>Erro:</b> ${error.message}. O conteúdo não pôde ser carregado.</p>`;
+                console.error('Erro ao carregar módulo:', error);
+                content.innerHTML = `<p style="color: red; text-align: center;">${error.message}</p>`;
             });
     }
 
-    // Carregar o primeiro módulo por padrão
+    // Carrega o módulo inicial de "Graus" por padrão
     loadModule('modules/graus.html');
 
-    // Configura os links de navegação
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            const modulePath = this.getAttribute('data-module');
-            loadModule(modulePath);
+    // Adiciona os listeners para os links de navegação
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            loadModule(e.target.getAttribute('data-module'));
         });
     });
 };

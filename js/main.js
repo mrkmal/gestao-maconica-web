@@ -1,33 +1,29 @@
 window.initializeApp = function() {
     const content = document.getElementById('content');
 
-    // Objeto que mapeia caminhos de módulo para suas funções de inicialização
-    const moduleInitializers = {
-        'modules/graus.html': () => window.ModuleHandler.initGraus(),
-        'modules/macons.html': () => window.ModuleHandler.initMacons(),
-        'modules/reunioes.html': () => window.ModuleHandler.initReunioes(),
-        'modules/eventos.html': () => window.ModuleHandler.initEventos(),
-    };
-
+    // Função para carregar o módulo e chamar seu inicializador
     function loadModule(modulePath) {
-        // Busca apenas o HTML puro
+        // 1. Extrai o nome do módulo do caminho do arquivo (ex: 'modules/graus.html' -> 'graus')
+        const moduleName = modulePath.split('/').pop().split('.')[0];
+
+        // 2. Busca o conteúdo HTML do módulo
         fetch(modulePath)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Falha ao carregar o conteúdo do módulo: ${modulePath}`);
+                    throw new Error(`Falha ao carregar o HTML do módulo: ${modulePath}`);
                 }
                 return response.text();
             })
             .then(html => {
-                // Insere o HTML na página. Simples assim.
+                // 3. Insere o HTML puro na área de conteúdo da página
                 content.innerHTML = html;
-                
-                // Chama a função de inicialização correspondente que já está na memória
-                const initializer = moduleInitializers[modulePath];
-                if (initializer) {
-                    initializer();
+
+                // 4. Verifica se um inicializador para este módulo foi registrado
+                if (window.moduleInitializers && typeof window.moduleInitializers[moduleName] === 'function') {
+                    // 5. Executa a função de inicialização específica do módulo
+                    window.moduleInitializers[moduleName]();
                 } else {
-                    console.warn(`Nenhuma função de inicialização encontrada para ${modulePath}`);
+                    console.warn(`Nenhum inicializador de módulo encontrado para: ${moduleName}`);
                 }
             })
             .catch(error => {
@@ -36,10 +32,10 @@ window.initializeApp = function() {
             });
     }
 
-    // Carregar o primeiro módulo por padrão
+    // Carrega o módulo inicial por padrão
     loadModule('modules/graus.html');
 
-    // Configura os links de navegação
+    // Configura os links de navegação para carregar outros módulos ao serem clicados
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();

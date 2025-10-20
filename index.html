@@ -46,10 +46,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="js/firebase-config.js"></script>
 
-    <!-- Scripts da Aplicação -->
-    <script src="js/modules.js"></script> <!-- Lógica centralizada dos módulos -->
-    <script src="js/main.js"></script>     <!-- Gerenciador de carregamento de módulos -->
-    <script src="js/auth.js"></script>     <!-- Script de autenticação -->
+    <!-- Scripts dos Módulos (carregados primeiro para registrar inicializadores) -->
+    <script src="js/graus.js"></script>
+
+    <!-- Scripts Principais da Aplicação -->
+    <script src="js/main.js"></script> 
+    <script src="js/auth.js"></script>
 
 </body>
 </html>

@@ -1,49 +1,51 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("[Auth] DOM Loaded. Initializing script.");
-    const auth = firebase.auth();
-    const mainContent = document.getElementById('main-content-wrapper');
+(function() {
+    const loginForm = document.getElementById('login-form');
+    const logoutButton = document.getElementById('logout-button');
     const loginContainer = document.getElementById('login-container');
+    const mainContentWrapper = document.getElementById('main-content-wrapper');
 
-    if (!mainContent || !loginContainer) {
-        console.error("[Auth] Critical: Could not find main or login containers.");
+    if (!loginForm) {
+        console.error('Formulário de login não encontrado!');
         return;
     }
 
-    const loginForm = document.getElementById('login-form');
+    // Listener para o formulário de login
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = loginForm['email'].value;
         const password = loginForm['password'].value;
-        console.log("[Auth] Attempting sign-in...");
-        auth.signInWithEmailAndPassword(email, password)
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
             .catch(error => {
-                console.error("[Auth] Login Error:", error);
-                alert('E-mail ou senha incorretos.');
+                console.error("Erro no login:", error);
+                alert('Falha no login: ' + error.message);
             });
     });
 
-    const logoutButton = document.getElementById('logout-button');
-    logoutButton.addEventListener('click', () => {
-        auth.signOut();
-    });
+    // Listener para o botão de logout
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            firebase.auth().signOut();
+        });
+    }
 
-    auth.onAuthStateChanged(user => {
-        console.log("[Auth] Auth state changed.");
+    // Observador do estado de autenticação do Firebase
+    firebase.auth().onAuthStateChanged(user => {
         if (user) {
-            console.log("[Auth] User is logged in. Updating UI.");
-            mainContent.style.display = 'block';
+            // Usuário está logado.
+            console.log('Usuário autenticado, exibindo conteúdo principal.');
             loginContainer.style.display = 'none';
-            
+            mainContentWrapper.style.display = 'block';
+            // Inicializa o conteúdo principal (módulos)
             if (window.initializeApp) {
-                console.log("[Auth] Calling app initializer.");
                 window.initializeApp();
-            } else {
-                console.error("[Auth] Critical: initializeApp function not found!");
             }
         } else {
-            console.log("[Auth] User is logged out. Showing login screen.");
-            mainContent.style.display = 'none';
+            // Usuário está deslogado.
+            console.log('Nenhum usuário autenticado, exibindo tela de login.');
             loginContainer.style.display = 'block';
+            mainContentWrapper.style.display = 'none';
         }
     });
-});
+
+})();

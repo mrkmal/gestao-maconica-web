@@ -190,7 +190,7 @@
             <h3 style="margin-top: 20px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
             <table id="tabela-relatorio" style="margin-top: 10px;">
                 <thead>
-                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>% Frequência</th></tr>
+                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>Total de Faltas</th><th>% Frequência</th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -227,7 +227,6 @@
         let graus = [];
         let sessoes = [];
         let sessaoAtualParaFrequencia = null;
-        let membroSelecionadoParaRelatorio = null; // NOVO: Armazena o membro para o relatório detalhado
 
 
         /* --- 2. GESTÃO DE TELAS E NAVEGAÇÃO INTERNA --- */
@@ -494,7 +493,6 @@
             
             const grauRequerido = sessao.grau_requerido;
             
-            // Filtra os membros com grau igual ou superior ao grau da sessão
             const membrosElegiveis = membros.filter(m => {
                 return m.numero_grau && m.numero_grau >= grauRequerido;
             });
@@ -556,9 +554,10 @@
         }
 
 
-        /* --- 7. MÓDULO DE RELATÓRIOS (CORREÇÃO DE ELEGIBILIDADE) --- */
+        /* --- 7. MÓDULO DE RELATÓRIOS (CORREÇÃO DE ELEGIBILIDADE E DETALHES) --- */
 
         function carregarDadosEGerarRelatorio() {
+            // Garante que os arrays 'membros' e 'sessoes' estão atualizados
             carregarMembros(); 
             
             if (sessoes.length === 0) {
@@ -566,15 +565,20 @@
                  return;
             }
             
+            const todasAsSessoes = sessoes;
+
             // Variável temporária para armazenar os detalhes do relatório
             const relatorio = {};
-            const todasAsSessoes = sessoes;
 
             // Inicializa a estrutura do relatório e o array de histórico
             membros.forEach(membro => {
                 relatorio[membro.matricula] = { 
-                    ...membro,
+                    matricula: membro.matricula,
+                    nome: membro.nome,
+                    grau: membro.nome_grau || membro.grau || 'N/A', // Usa nome_grau (string)
+                    numero_grau: membro.numero_grau || 0, // Usa número para filtro
                     presencas: 0,
+                    faltas: 0, 
                     total_aptas: 0,
                     historico: [] // Novo array para a tabela detalhada
                 };
@@ -586,16 +590,20 @@
                     const dadosRelatorio = relatorio[membro.matricula];
                     if (!dadosRelatorio) return;
 
-                    const elegivel = membro.numero_grau && membro.numero_grau >= sessao.grau_requerido;
+                    const grauRequerido = sessao.grau_requerido || 0;
+                    // Usa o NÚMERO DE GRAU do membro para a checagem
+                    const elegivel = dadosRelatorio.numero_grau >= grauRequerido;
                     const presente = sessao.frequencia[membro.matricula] === true;
 
                     let status = 'N'; // Não Elegível
 
                     if (elegivel) {
-                        dadosRelatorio.total_aptas++; // Conta apenas as sessões aptas
+                        dadosRelatorio.total_aptas++; 
                         status = presente ? 'P' : 'F';
                         if (presente) {
                             dadosRelatorio.presencas++;
+                        } else {
+                            dadosRelatorio.faltas++;
                         }
                     }
 
@@ -615,14 +623,13 @@
             const tbodyResumo = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
             const tbodyHistorico = document.getElementById('tabela-historico-sessoes').getElementsByTagName('tbody')[0];
             tbodyResumo.innerHTML = ''; 
-            
-            // Limpa o histórico anterior, se houver
             tbodyHistorico.innerHTML = ''; 
-
-            // NOVO: Seleciona o primeiro membro para exibir o histórico detalhado
+            
+            // Seleciona o primeiro membro para exibir o histórico detalhado inicial
             const primeiroMembro = Object.values(dadosRelatorio)[0];
             if (primeiroMembro) {
-                 exibirHistoricoDetalhado(primeiroMembro.historico);
+                 document.querySelector('#relatorios-section h3:last-of-type').textContent = `Histórico Detalhado para: ${primeiroMembro.nome}`;
+                 exibirHistoricoDetalhado(primeiroMembro.historico, primeiroMembro.nome);
             }
             
             // 1. Preenche a Tabela de Resumo
@@ -633,14 +640,15 @@
 
                 row.insertCell().textContent = dados.matricula;
                 row.insertCell().textContent = dados.nome;
-                row.insertCell().textContent = dados.grau || 'N/A';
+                row.insertCell().textContent = dados.grau;
                 row.insertCell().textContent = dados.presencas;
                 row.insertCell().textContent = totalAptas;
+                row.insertCell().textContent = dados.faltas; 
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
                 
-                // NOVO: Adiciona um listener para mostrar o histórico ao clicar
+                // Adiciona um listener para mostrar o histórico ao clicar
                 row.style.cursor = 'pointer';
-                row.style.backgroundColor = '#e6f7ff'; // Destaca que é clicável
+                row.style.backgroundColor = '#e6f7ff'; 
                 row.onclick = () => exibirHistoricoDetalhado(dados.historico, dados.nome);
             });
 
@@ -656,7 +664,7 @@
             historico.forEach(h => {
                 const row = tbody.insertRow();
                 row.insertCell().textContent = h.data;
-                row.insertCell().textContent = h.grau_sessao;
+                row.insertCell().textContent = `Grau ${h.grau_sessao}`;
                 row.insertCell().textContent = h.status;
             });
         }

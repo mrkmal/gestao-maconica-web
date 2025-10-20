@@ -1,37 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão Maçônica</title>
-    <link rel="stylesheet" type="text/css" href="css/style.css">
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <link rel="stylesheet" href="css/styles.css"> <!-- Adicionado o CSS -->
 </head>
 <body>
-    <div id="login-container">
-        <h1>Bem-vindo à Gestão Maçônica</h1>
-        <p>Por favor, faça o login para continuar.</p>
-        <button id="google-signin">Login com Google</button>
-    </div>
-
-    <div id="main-content">
-        <div id="sidebar">
-            <img id="user-photo" src="" alt="User Photo" style="width: 50px; height: 50px; border-radius: 50%;">
-            <h2>Menu</h2>
+    <header>
+        <h1>Gestão Maçônica</h1>
+        <nav>
             <ul>
-                <li><a href="#" onclick="loadPage('graus')">Graus</a></li>
-                <li><a href="#" onclick="loadPage('macons')">Maçons</a></li>
-                <li><a href="#" onclick="loadPage('reunioes')">Reuniões</a></li>
-                <li><a href="#" onclick="loadPage('eventos')">Eventos</a></li>
+                <li><a href="#" class="nav-link" data-module="modules/graus.html">Graus</a></li>
+                <li><a href="#" class="nav-link" data-module="modules/macons.html">Maçons</a></li>
+                <li><a href="#" class="nav-link" data-module="modules/reunioes.html">Reuniões</a></li>
+                <li><a href="#" class="nav-link" data-module="modules/eventos.html">Eventos</a></li>
             </ul>
-            <button id="google-signout">Logout</button>
-        </div>
+        </nav>
+    </header>
 
-        <div id="content-area">
-            <!-- Content will be loaded here -->
-        </div>
-    </div>
+    <main id="content">
+        <!-- O conteúdo dos módulos será carregado aqui -->
+    </main>
 
-    <script src="js/main.js"></script>
+    <footer>
+        <p>&copy; 2024 Gestão Maçônica. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- Scripts Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="js/firebase-config.js"></script>
+
+    <!-- Script principal da aplicação -->
+    <script src="js/main.js"></script> <!-- Adicionado o JS principal -->
+
 </body>
 </html>

@@ -79,145 +79,19 @@
         
         <div style="margin-bottom: 20px;">
             <button onclick="showSection('menu')">Menu Principal</button>
-            <button onclick="showSection('graus')">Gestão de Graus</button>
-            <button onclick="showSection('irmaos')">Cadastro de Irmãos</button>
-            <button onclick="showSection('sessoes')">Registo de Sessões</button>
-            <button onclick="showSection('relatorios')">Relatórios</button>
+            <button onclick="loadPage('graus')">Gestão de Graus</button>
+            <button onclick="loadPage('irmaos')">Cadastro de Irmãos</button>
+            <button onclick="loadPage('sessoes')">Registo de Sessões</button>
+            <button onclick="loadPage('relatorios')">Relatórios</button>
         </div>
 
-        <div id="menu-section" class="section-content">
-            <h2>Menu Principal</h2>
-            <p>Selecione uma opção para gerir os dados:</p>
+        <div id="content-area">
+            <!-- O conteúdo das seções será carregado aqui -->
         </div>
 
-        <div id="graus-section" class="section-content" style="display:none;">
-            <h2>Gestão de Graus Maçônicos</h2>
+    </div> 
 
-            <form id="form-grau">
-                <label for="numero-grau">Número/Ordem do Grau:</label>
-                <input type="number" id="numero-grau" required min="1" value="1"> 
-                
-                <label for="nome-grau">Nome do Grau:</label>
-                <input type="text" id="nome-grau" required>
-                
-                <button type="submit">Adicionar Grau</button>
-            </form>
-
-            <h3>Graus Cadastrados</h3>
-            <table id="tabela-graus">
-                <thead>
-                    <tr><th>Nº</th><th>Nome do Grau</th><th>Ações</th></tr> 
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        
-        <div id="irmaos-section" class="section-content" style="display:none;">
-            <h2>Cadastro de Irmãos</h2>
-            <form id="form-membro">
-                <label for="nome">Nome Completo:</label>
-                <input type="text" id="nome" required>
-                
-                <label for="matricula">Matrícula (Única):</label>
-                <input type="text" id="matricula" required>
-                
-                <label for="grau">Grau:</label>
-                <select id="grau">
-                    <option value="">A carregar Graus...</option>
-                </select>
-                
-                <input type="hidden" id="membro-id-edicao" value=""> 
-
-                <button type="submit" id="btn-cadastrar">Cadastrar Irmão</button>
-                <button type="button" id="btn-cancelar" onclick="cancelarEdicao()" style="display:none; background-color:#6c757d;">Cancelar Edição</button>
-            </form>
-
-            <h3>Lista de Irmãos Cadastrados</h3>
-            <table id="tabela-membros">
-                <thead>
-                    <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Ações</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="sessoes-section" class="section-content" style="display:none;">
-            <h2>Registo de Sessão e Frequência</h2>
-            <form id="form-sessao">
-                <label for="data-sessao">Data da Sessão:</label>
-                <input type="date" id="data-sessao" required>
-                
-                <label for="tipo-sessao">Tipo/Nome da Sessão:</label>
-                <input type="text" id="tipo-sessao" required>
-                
-                <label for="grau-sessao-requerido">Grau da Sessão:</label>
-                <select id="grau-sessao-requerido" required>
-                    <option value="">A carregar Graus...</option>
-                </select>
-                
-                <button type="submit">Criar Sessão e Marcar Frequência</button>
-            </form>
-
-            <div id="frequencia-form" style="display:none; margin-top: 20px;">
-                <h3>Marcar Frequência (Sessão: <span id="sessao-data-display"></span>)</h3>
-                <form id="form-frequencia">
-                    <table id="tabela-frequencia" class="tabela-frequencia">
-                        <thead>
-                            <tr><th>Nome do Irmão</th><th>Presença</th><th>Falta</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                    <button type="button" onclick="salvarFrequencia()">Salvar Frequência</button>
-                </form>
-            </div>
-
-            <h3>Sessões Registradas</h3>
-            <table id="tabela-sessoes">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Grau</th> 
-                        <th>Total de Presentes</th> 
-                        <th>Total de Aptos</th> 
-                        <th>% de Frequência</th> 
-                        <th>Ações</th> 
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="relatorios-section" class="section-content" style="display:none;">
-            <h2>Relatórios de Frequência</h2>
-            
-            <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
-            <button onclick="exportarParaPDF()" style="background-color: #dc3545;">Exportar para PDF</button>
-
-            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
-                <h4 style="text-align: center; margin-bottom: 20px;">Relatório de Frequência - Detalhado por Sessão</h4>
-
-                <div style="overflow-x: auto;">
-                    <table id="tabela-relatorio-dinamica">
-                        </table>
-                </div>
-
-                <h3 style="margin-top: 30px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
-                <table id="tabela-relatorio-resumo" style="margin-top: 10px;">
-                    <thead>
-                        <tr><th>Matrícula</th><th>Nome</th><th>Grau</th><th>Presenças</th><th>Total de Sessões Aptas</th><th>Total de Faltas</th><th>% Frequência</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
-                <strong>Legenda:</strong> P = Presente | F = Faltou | N = Não Elegível (Grau Insuficiente)
-            </div>
-            
-        </div>
-
-
-    </div> <script>
+    <script>
         /* Documentação JavaScript: Lógica Completa e Consolidada */
         
         // --- 1. CONFIGURAÇÃO DO FIREBASE ---
@@ -244,24 +118,29 @@
         /* --- 2. GESTÃO DE TELAS E NAVEGAÇÃO INTERNA --- */
 
         function showSection(sectionId) {
-            const sections = ['menu', 'graus', 'irmaos', 'sessoes', 'relatorios'];
-            sections.forEach(id => {
-                const element = document.getElementById(id + '-section');
-                if (element) {
-                    element.style.display = (id === sectionId) ? 'block' : 'none';
-                }
-            });
-
-            if (sectionId === 'irmaos') {
-                popularGrausDropdownMembro(); 
-                carregarMembros();
-                cancelarEdicao();
-            } else if (sectionId === 'sessoes') {
-                popularGrausDropdownSessao(); 
-                carregarMembrosESessoes();
-            } else if (sectionId === 'relatorios') {
-                carregarMembrosESessoes(); 
+            if (sectionId === 'menu') {
+                document.getElementById('content-area').innerHTML = '<div id="menu-section" class="section-content"><h2>Menu Principal</h2><p>Selecione uma opção para gerir os dados:</p></div>';
             }
+        }
+
+        function loadPage(page) {
+            fetch(`modules/${page}.html`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('content-area').innerHTML = html;
+                    if (page === 'irmaos') {
+                        popularGrausDropdownMembro(); 
+                        carregarMembros();
+                        cancelarEdicao();
+                    } else if (page === 'sessoes') {
+                        popularGrausDropdownSessao(); 
+                        carregarMembrosESessoes();
+                    } else if (page === 'relatorios') {
+                        carregarMembrosESessoes(); 
+                    } else if (page === 'graus') {
+                        carregarGraus();
+                    }
+                });
         }
 
         function mostrarApp() {
@@ -310,9 +189,7 @@
                 snapshot.forEach((doc) => {
                     graus.push({ id: doc.id, ...doc.data() });
                 });
-                if (document.getElementById('graus-section').style.display === 'block') {
-                    exibirGraus(); 
-                }
+                exibirGraus(); 
             });
         }
 
@@ -333,13 +210,15 @@
             });
         }
         
-        document.getElementById('form-grau').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nome = document.getElementById('nome-grau').value.trim();
-            const numero = parseInt(document.getElementById('numero-grau').value, 10); 
-            db.collection("graus").add({ nome: nome, numero: numero }) 
-                .then(() => { alert(`Grau ${numero} - "${nome}" cadastrado!`); this.reset(); })
-                .catch((error) => { alert("Erro ao salvar o Grau. Verifique as regras!"); console.error(error); });
+        document.getElementById('content-area').addEventListener('submit', function(e) {
+            if (e.target && e.target.id === 'form-grau') {
+                e.preventDefault();
+                const nome = document.getElementById('nome-grau').value.trim();
+                const numero = parseInt(document.getElementById('numero-grau').value, 10); 
+                db.collection("graus").add({ nome: nome, numero: numero }) 
+                    .then(() => { alert(`Grau ${numero} - "${nome}" cadastrado!`); e.target.reset(); })
+                    .catch((error) => { alert("Erro ao salvar o Grau. Verifique as regras!"); console.error(error); });
+            }
         });
 
         function excluirGrau(grauId, nomeGrau) {
@@ -372,9 +251,7 @@
                 snapshot.forEach((doc) => {
                     membros.push({ id: doc.id, ...doc.data() });
                 });
-                if (document.getElementById('irmaos-section').style.display === 'block') {
-                    exibirMembros();
-                }
+                exibirMembros();
             });
         }
         
@@ -399,29 +276,31 @@
             document.getElementById('btn-cancelar').style.display = 'none';
         }
 
-        document.getElementById('form-membro').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const membroId = document.getElementById('membro-id-edicao').value;
-            const nome = document.getElementById('nome').value;
-            const matricula = document.getElementById('matricula').value.trim();
-            const selectGrau = document.getElementById('grau');
-            const numeroGrau = parseInt(selectGrau.value, 10); 
-            const nomeGrau = selectGrau.options[selectGrau.selectedIndex].getAttribute('data-nome'); 
-            
-            const dadosMembro = { matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau };
+        document.getElementById('content-area').addEventListener('submit', function(e) {
+            if (e.target && e.target.id === 'form-membro') {
+                e.preventDefault();
+                
+                const membroId = document.getElementById('membro-id-edicao').value;
+                const nome = document.getElementById('nome').value;
+                const matricula = document.getElementById('matricula').value.trim();
+                const selectGrau = document.getElementById('grau');
+                const numeroGrau = parseInt(selectGrau.value, 10); 
+                const nomeGrau = selectGrau.options[selectGrau.selectedIndex].getAttribute('data-nome'); 
+                
+                const dadosMembro = { matricula, nome, nome_grau: nomeGrau, numero_grau: numeroGrau };
 
-            if (membroId) {
-                db.collection("membros").doc(membroId).update(dadosMembro)
-                    .then(() => { 
-                        alert(`Irmão ${nome} atualizado (Novo Grau: ${nomeGrau})!`); 
-                        cancelarEdicao();
-                    })
-                    .catch((error) => { alert("Erro ao atualizar o Irmão."); console.error(error); });
-            } else {
-                db.collection("membros").add(dadosMembro)
-                    .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); this.reset(); })
-                    .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
+                if (membroId) {
+                    db.collection("membros").doc(membroId).update(dadosMembro)
+                        .then(() => { 
+                            alert(`Irmão ${nome} atualizado (Novo Grau: ${nomeGrau})!`); 
+                            cancelarEdicao();
+                        })
+                        .catch((error) => { alert("Erro ao atualizar o Irmão."); console.error(error); });
+                } else {
+                    db.collection("membros").add(dadosMembro)
+                        .then(() => { alert(`Irmão ${nome} cadastrado com Grau ${nomeGrau}!`); e.target.reset(); })
+                        .catch((error) => { alert("Erro ao salvar o Irmão."); console.error(error); });
+                }
             }
         });
         
@@ -478,25 +357,25 @@
             db.collection("sessoes").orderBy("data", "desc").onSnapshot((snapshot) => {
                 sessoes = [];
                 snapshot.forEach((doc) => { sessoes.push({ id: doc.id, ...doc.data() }); });
-                if (document.getElementById('sessoes-section').style.display === 'block') {
-                    exibirSessoes();
-                }
+                exibirSessoes();
             });
         }
         
-        document.getElementById('form-sessao').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const data = document.getElementById('data-sessao').value;
-            const tipo = document.getElementById('tipo-sessao').value;
-            const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
-            
-            if (isNaN(grauRequeridoNumero)) {
-                alert('Por favor, selecione um Grau Mínimo Requerido para a Sessão.');
-                return;
-            }
+        document.getElementById('content-area').addEventListener('submit', function(e) {
+            if (e.target && e.target.id === 'form-sessao') {
+                e.preventDefault();
+                const data = document.getElementById('data-sessao').value;
+                const tipo = document.getElementById('tipo-sessao').value;
+                const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
+                
+                if (isNaN(grauRequeridoNumero)) {
+                    alert('Por favor, selecione um Grau Mínimo Requerido para a Sessão.');
+                    return;
+                }
 
-            sessaoAtualParaFrequencia = { data, tipo, grau_requerido: grauRequeridoNumero, frequencia: {} };
-            prepararFormularioFrequencia(sessaoAtualParaFrequencia);
+                sessaoAtualParaFrequencia = { data, tipo, grau_requerido: grauRequeridoNumero, frequencia: {} };
+                prepararFormularioFrequencia(sessaoAtualParaFrequencia);
+            }
         });
 
         // FUNÇÃO CRÍTICA: FILTRO POR GRAU

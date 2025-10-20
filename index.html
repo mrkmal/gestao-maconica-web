@@ -9,8 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> 
-
     <style>
         /* Estilos de layout e login */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
@@ -147,10 +145,7 @@
                 <label for="data-sessao">Data da Sessão:</label>
                 <input type="date" id="data-sessao" required>
                 
-                <label for="tipo-sessao">Tipo/Nome da Sessão:</label>
-                <input type="text" id="tipo-sessao" required>
-                
-                <label for="grau-sessao-requerido">Grau Mínimo Requerido:</label>
+                <label for="grau-sessao-requerido">Grau da Sessão:</label>
                 <select id="grau-sessao-requerido" required>
                     <option value="">A carregar Graus...</option>
                 </select>
@@ -159,7 +154,7 @@
             </form>
 
             <div id="frequencia-form" style="display:none; margin-top: 20px;">
-                <h3>Marcar Frequência (Data: <span id="sessao-data-display"></span>)</h3>
+                <h3>Marcar Frequência (Sessão: <span id="sessao-data-display"></span>)</h3>
                 <form id="form-frequencia">
                     <table id="tabela-frequencia" class="tabela-frequencia">
                         <thead>
@@ -174,7 +169,9 @@
             <h3>Sessões Registradas</h3>
             <table id="tabela-sessoes">
                 <thead>
-                    <tr><th>Data</th><th>Tipo</th><th>Grau Mínimo</th><th>Ações</th></tr>
+                    <tr>
+                        <th>Data</th>
+                        <th>Grau</th> <th>Total de Presentes</th> <th>Total de Aptos</th> <th>% de Frequência</th> <th>Ações</th> </tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -186,7 +183,8 @@
             <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
             <button onclick="exportarParaPDF()" style="background-color: #dc3545;">Exportar para PDF</button>
 
-            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
+            <div id="relatorio-content"> 
+                <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
                 <h4 style="text-align: center; margin-bottom: 20px;">Relatório de Frequência - Detalhado por Sessão</h4>
 
                 <table id="tabela-relatorio-dinamica">
@@ -243,11 +241,10 @@
                 }
             });
 
-            // Ações específicas ao abrir a seção:
             if (sectionId === 'irmaos') {
                 popularGrausDropdownMembro(); 
                 carregarMembros();
-                cancelarEdicao(); // Garante que o formulário está no modo Cadastro
+                cancelarEdicao(); 
             } else if (sectionId === 'sessoes') {
                 popularGrausDropdownSessao(); 
                 carregarMembrosESessoes();
@@ -479,7 +476,7 @@
         document.getElementById('form-sessao').addEventListener('submit', function(e) {
             e.preventDefault();
             const data = document.getElementById('data-sessao').value;
-            const tipo = document.getElementById('tipo-sessao').value;
+            // REMOVIDO CAMPO TIPO/NOME DA SESSÃO, USANDO O GRAU COMO NOME PADRÃO
             const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
             
             if (isNaN(grauRequeridoNumero)) {
@@ -487,7 +484,10 @@
                 return;
             }
 
-            sessaoAtualParaFrequencia = { data, tipo, grau_requerido: grauRequeridoNumero, frequencia: {} };
+            const nomeGrau = graus.find(g => g.numero === grauRequeridoNumero)?.nome || `Grau ${grauRequeridoNumero}`;
+
+            // O nome/tipo da sessão será o nome do grau
+            sessaoAtualParaFrequencia = { data, tipo: nomeGrau, grau_requerido: grauRequeridoNumero, frequencia: {} };
             prepararFormularioFrequencia(sessaoAtualParaFrequencia);
         });
 
@@ -551,9 +551,44 @@
             sessoes.forEach(s => {
                 const row = tbody.insertRow();
                 row.insertCell().textContent = s.data;
-                row.insertCell().textContent = s.tipo + (s.grau_requerido ? ` (Grau Mínimo: ${s.grau_requerido})` : '');
-                row.insertCell().textContent = 'Completo'; 
+                
+                // NOVO: Exibe o nome do grau
+                const nomeGrau = graus.find(g => g.numero === s.grau_requerido)?.nome || `Grau ${s.grau_requerido}`;
+                row.insertCell().textContent = nomeGrau; 
+                
+                // Calcula Totais para a Tabela de Sessões Registradas
+                const totalPresentes = Object.values(s.frequencia).filter(p => p === true).length;
+                const totalAptos = membros.filter(m => m.numero_grau >= s.grau_requerido).length;
+                const percentagem = totalAptos > 0 ? (totalPresentes / totalAptos) * 100 : 0;
+
+
+                row.insertCell().textContent = totalPresentes;
+                row.insertCell().textContent = totalAptos;
+                row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
+                
+                // Coluna Ações
+                const cellAcoes = row.insertCell(); 
+                const btnVisualizar = document.createElement('button');
+                btnVisualizar.textContent = 'Ver/Alt';
+                btnVisualizar.className = 'action-btn';
+                btnVisualizar.style.backgroundColor = '#17a2b8';
+                btnVisualizar.onclick = () => alert('Funcionalidade de Alterar Sessão em breve!');
+                cellAcoes.appendChild(btnVisualizar);
+
+                const btnExcluir = document.createElement('button');
+                btnExcluir.textContent = 'Excluir';
+                btnExcluir.className = 'action-btn';
+                btnExcluir.style.backgroundColor = '#dc3545';
+                btnExcluir.onclick = () => excluirSessao(s.id, s.data);
+                cellAcoes.appendChild(btnExcluir);
             });
+        }
+        
+        function excluirSessao(sessaoId, dataSessao) {
+            if (!confirm(`Excluir a sessão de ${dataSessao}? Esta ação é irreversível e afetará os relatórios!`)) return;
+            db.collection("sessoes").doc(sessaoId).delete()
+                .then(() => { alert(`Sessão de ${dataSessao} excluída!`); })
+                .catch((error) => { alert(`Erro ao tentar excluir a sessão!`); console.error(error); });
         }
 
 
@@ -568,32 +603,27 @@
             }
             
             const todasAsSessoes = sessoes;
-
-            // Variável temporária para armazenar os detalhes do relatório
             const relatorio = {};
 
-            // Inicializa a estrutura do relatório e o array de histórico
             membros.forEach(membro => {
                 relatorio[membro.matricula] = { 
                     matricula: membro.matricula,
                     nome: membro.nome,
-                    grau: membro.nome_grau || membro.grau || 'N/A', // Usa nome_grau (string)
-                    numero_grau: membro.numero_grau || 0, // Usa número para filtro
+                    grau: membro.nome_grau || membro.grau || 'N/A', 
+                    numero_grau: membro.numero_grau || 0, 
                     presencas: 0,
                     faltas: 0, 
                     total_aptas: 0,
-                    historico: [] // Novo array para a tabela detalhada
+                    historico: [] 
                 };
             });
 
-            // Processa todas as sessões
             todasAsSessoes.forEach(sessao => {
                 membros.forEach(membro => {
                     const dadosRelatorio = relatorio[membro.matricula];
                     if (!dadosRelatorio) return;
 
                     const grauRequerido = sessao.grau_requerido || 0;
-                    // Usa o NÚMERO DE GRAU do membro para a checagem
                     const elegivel = dadosRelatorio.numero_grau >= grauRequerido;
                     const presente = sessao.frequencia[membro.matricula] === true;
 
@@ -609,7 +639,6 @@
                         }
                     }
 
-                    // Adiciona ao histórico detalhado
                     dadosRelatorio.historico.push({
                         data: sessao.data,
                         grau_sessao: sessao.grau_requerido,
@@ -620,7 +649,7 @@
 
             exibirRelatorio(relatorio);
         }
-
+        
         // NOVO: Função para exportar a div de conteúdo para PDF
         window.exportarParaPDF = function() {
             const element = document.getElementById('relatorio-content');
@@ -629,7 +658,7 @@
                 filename: 'Relatorio_Frequencia_Maconica.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } // Orientação Paisagem
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
             };
 
             // Certifique-se de que a tabela dinâmica foi gerada antes de exportar
@@ -652,32 +681,28 @@
             // 1. GERAÇÃO DA TABELA DINÂMICA (Layout Excel)
             // -------------------------------------------------------------
 
-            // Cabeçalho Principal (Datas das Sessões e Status Final)
             let headerHTML = '<thead><tr><th rowspan="2">Matrícula</th><th rowspan="2">Nome</th><th rowspan="2">Grau</th>';
-            let headerDatasHTML = '<tr>'; // Segunda linha do cabeçalho (Datas)
-            let headerStatusHTML = '<th colspan="3" style="text-align:center;">Resumo</th></tr>'; // Resumo (Sessões, Falta, Presença)
             
             // Array com as datas das sessões para garantir a ordem
             const datasSessoes = sessoes.map(s => s.data).sort(); 
 
             // Adiciona Colunas Dinâmicas de Sessão
             datasSessoes.forEach(data => {
-                headerHTML += `<th colspan="1" style="text-align:center;">${data}</th>`;
+                headerHTML += `<th colspan="1" style="text-align:center; font-size: 0.8em;">${data}</th>`;
             });
 
-            // Fecha o cabeçalho principal e adiciona as colunas de resumo
+            // Adiciona as colunas de resumo final
             headerHTML += `<th rowspan="2">Sessões Aptas</th><th rowspan="2">Presença</th><th rowspan="2">Falta</th><th rowspan="2">% PRESENÇA</th></tr>`;
             
-            // Adiciona as Datas (Segunda Linha)
-            headerDatasHTML = '<tr><th>Matrícula</th><th>Nome</th><th>Grau</th>'; // Headers de Matrícula, Nome, Grau para a segunda linha (para alinhamento)
+            // A segunda linha será apenas para o Grau Requerido
+            let headerGrausRequeridosHTML = '<tr><th></th><th></th><th></th>'; // placeholders
             datasSessoes.forEach(data => {
-                // Pega a sessão pela data para obter o grau requerido
                 const sessao = sessoes.find(s => s.data === data);
-                headerDatasHTML += `<th style="text-align:center; font-size: 0.8em;">G: ${sessao.grau_requerido || 'N/A'}</th>`;
+                headerGrausRequeridosHTML += `<th style="text-align:center; font-size: 0.8em;">G: ${sessao.grau_requerido || 'N/A'}</th>`;
             });
-            headerDatasHTML += '<th></th><th></th><th></th><th></th></tr>'; // Fecha a segunda linha
+            headerGrausRequeridosHTML += `<th></th><th></th><th></th><th></th></tr>`; // Fecha a segunda linha
 
-            tabelaDinamica.innerHTML = headerHTML + headerStatusHTML; // Junta os cabeçalhos
+            tabelaDinamica.innerHTML = headerHTML + headerGrausRequeridosHTML;
 
             // -------------------------------------------------------------
             // 2. GERAÇÃO DO CORPO DA TABELA DINÂMICA
@@ -714,7 +739,7 @@
             
             
             // -------------------------------------------------------------
-            // 3. PREENCHE A TABELA DE RESUMO (A tabela antiga, agora secundária)
+            // 3. PREENCHE A TABELA DE RESUMO (Tabela debaixo)
             // -------------------------------------------------------------
             Object.values(dadosRelatorio).forEach(dados => {
                 const row = tbodyResumo.insertRow();
@@ -729,10 +754,10 @@
                 row.insertCell().textContent = dados.faltas; 
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
                 
-                // Adiciona um listener para mostrar o histórico ao clicar
+                // Destaca que a linha é clicável (embora a navegação detalhada seja na tabela dinâmica)
                 row.style.cursor = 'pointer';
                 row.style.backgroundColor = '#e6f7ff'; 
-                row.onclick = () => alert(`Histórico Completo na Tabela Acima! Irmão: ${dados.nome}`);
+                row.onclick = () => alert(`Dados de Resumo para: ${dados.nome}`);
             });
 
 

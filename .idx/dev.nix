@@ -9,7 +9,7 @@
     # pkgs.go
     # pkgs.python311
     # pkgs.python311Packages.pip
-    # pkgs.nodejs_20
+    pkgs.nodejs_20
     # pkgs.nodePackages.nodemon
   ];
 
@@ -20,36 +20,26 @@
     extensions = [
       # "vscodevim.vim"
     ];
+    
+    # The following ports are forwarded from your workspace to your local machine.
+    # The name of the port is mandatory, but the description is optional.
+    forwardPorts = [
+      {
+        name = "http-server";
+        port = 8080;
+        # visit the forwarded port in a new tab
+        open = true;
+        # or, open the URL in a new tab
+        # open = "http://localhost:8080/my/path"
+      }
+    ];
 
-    # Enable previews
-    previews = {
-      enable = true;
-      previews = {
-        # web = {
-        #   # Example: run "npm run dev" with PORT set to IDX's defined port for previews,
-        #   # and show it in IDX's web preview panel
-        #   command = ["npm" "run" "dev"];
-        #   manager = "web";
-        #   env = {
-        #     # Environment variables to set for your server
-        #     PORT = "$PORT";
-        #   };
-        # };
-      };
-    };
-
-    # Workspace lifecycle hooks
-    workspace = {
-      # Runs when a workspace is first created
-      onCreate = {
-        # Example: install JS dependencies from NPM
-        # npm-install = "npm install";
-      };
-      # Runs when the workspace is (re)started
-      onStart = {
-        # Example: start a background task to watch and re-build backend code
-        # watch-backend = "npm run watch-backend";
-      };
-    };
+    # Enable this to shut down the workspace when the last VS Code window is closed.
+    # shutDownOnClose = true;
   };
+
+  # Run a command when the workspace starts
+  # startup.command = [
+  #   "echo 'Welcome to your workspace!'"
+  # ];
 }

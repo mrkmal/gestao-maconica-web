@@ -9,6 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         /* Estilos de layout e login */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
@@ -145,6 +147,9 @@
                 <label for="data-sessao">Data da Sessão:</label>
                 <input type="date" id="data-sessao" required>
                 
+                <label for="tipo-sessao">Tipo/Nome da Sessão:</label>
+                <input type="text" id="tipo-sessao" required>
+                
                 <label for="grau-sessao-requerido">Grau da Sessão:</label>
                 <select id="grau-sessao-requerido" required>
                     <option value="">A carregar Graus...</option>
@@ -171,7 +176,12 @@
                 <thead>
                     <tr>
                         <th>Data</th>
-                        <th>Grau</th> <th>Total de Presentes</th> <th>Total de Aptos</th> <th>% de Frequência</th> <th>Ações</th> </tr>
+                        <th>Grau</th> 
+                        <th>Total de Presentes</th> 
+                        <th>Total de Aptos</th> 
+                        <th>% de Frequência</th> 
+                        <th>Ações</th> 
+                    </tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -183,12 +193,13 @@
             <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
             <button onclick="exportarParaPDF()" style="background-color: #dc3545;">Exportar para PDF</button>
 
-            <div id="relatorio-content"> 
-                <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
+            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
                 <h4 style="text-align: center; margin-bottom: 20px;">Relatório de Frequência - Detalhado por Sessão</h4>
 
-                <table id="tabela-relatorio-dinamica">
-                    </table>
+                <div style="overflow-x: auto;">
+                    <table id="tabela-relatorio-dinamica">
+                        </table>
+                </div>
 
                 <h3 style="margin-top: 30px;">Resumo por Irmão (Baseado em Sessões Elegíveis)</h3>
                 <table id="tabela-relatorio-resumo" style="margin-top: 10px;">
@@ -244,7 +255,7 @@
             if (sectionId === 'irmaos') {
                 popularGrausDropdownMembro(); 
                 carregarMembros();
-                cancelarEdicao(); 
+                cancelarEdicao();
             } else if (sectionId === 'sessoes') {
                 popularGrausDropdownSessao(); 
                 carregarMembrosESessoes();
@@ -476,7 +487,7 @@
         document.getElementById('form-sessao').addEventListener('submit', function(e) {
             e.preventDefault();
             const data = document.getElementById('data-sessao').value;
-            // REMOVIDO CAMPO TIPO/NOME DA SESSÃO, USANDO O GRAU COMO NOME PADRÃO
+            const tipo = document.getElementById('tipo-sessao').value;
             const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
             
             if (isNaN(grauRequeridoNumero)) {
@@ -484,10 +495,7 @@
                 return;
             }
 
-            const nomeGrau = graus.find(g => g.numero === grauRequeridoNumero)?.nome || `Grau ${grauRequeridoNumero}`;
-
-            // O nome/tipo da sessão será o nome do grau
-            sessaoAtualParaFrequencia = { data, tipo: nomeGrau, grau_requerido: grauRequeridoNumero, frequencia: {} };
+            sessaoAtualParaFrequencia = { data, tipo, grau_requerido: grauRequeridoNumero, frequencia: {} };
             prepararFormularioFrequencia(sessaoAtualParaFrequencia);
         });
 
@@ -550,18 +558,17 @@
             tbody.innerHTML = ''; 
             sessoes.forEach(s => {
                 const row = tbody.insertRow();
-                row.insertCell().textContent = s.data;
                 
-                // NOVO: Exibe o nome do grau
                 const nomeGrau = graus.find(g => g.numero === s.grau_requerido)?.nome || `Grau ${s.grau_requerido}`;
-                row.insertCell().textContent = nomeGrau; 
                 
                 // Calcula Totais para a Tabela de Sessões Registradas
                 const totalPresentes = Object.values(s.frequencia).filter(p => p === true).length;
                 const totalAptos = membros.filter(m => m.numero_grau >= s.grau_requerido).length;
                 const percentagem = totalAptos > 0 ? (totalPresentes / totalAptos) * 100 : 0;
-
-
+                
+                // Colunas
+                row.insertCell().textContent = s.data;
+                row.insertCell().textContent = nomeGrau; 
                 row.insertCell().textContent = totalPresentes;
                 row.insertCell().textContent = totalAptos;
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
@@ -661,7 +668,6 @@
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
             };
 
-            // Certifique-se de que a tabela dinâmica foi gerada antes de exportar
             if (element.innerHTML.includes('tabela-relatorio-dinamica')) {
                  html2pdf().set(opt).from(element).save();
             } else {
@@ -694,13 +700,13 @@
             // Adiciona as colunas de resumo final
             headerHTML += `<th rowspan="2">Sessões Aptas</th><th rowspan="2">Presença</th><th rowspan="2">Falta</th><th rowspan="2">% PRESENÇA</th></tr>`;
             
-            // A segunda linha será apenas para o Grau Requerido
-            let headerGrausRequeridosHTML = '<tr><th></th><th></th><th></th>'; // placeholders
+            // A segunda linha será para o Grau Requerido da Sessão
+            let headerGrausRequeridosHTML = '<tr><th></th><th></th><th></th>'; 
             datasSessoes.forEach(data => {
                 const sessao = sessoes.find(s => s.data === data);
                 headerGrausRequeridosHTML += `<th style="text-align:center; font-size: 0.8em;">G: ${sessao.grau_requerido || 'N/A'}</th>`;
             });
-            headerGrausRequeridosHTML += `<th></th><th></th><th></th><th></th></tr>`; // Fecha a segunda linha
+            headerGrausRequeridosHTML += `<th></th><th></th><th></th><th></th></tr>`; 
 
             tabelaDinamica.innerHTML = headerHTML + headerGrausRequeridosHTML;
 
@@ -754,7 +760,7 @@
                 row.insertCell().textContent = dados.faltas; 
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
                 
-                // Destaca que a linha é clicável (embora a navegação detalhada seja na tabela dinâmica)
+                // Adiciona um listener para mostrar o histórico ao clicar
                 row.style.cursor = 'pointer';
                 row.style.backgroundColor = '#e6f7ff'; 
                 row.onclick = () => alert(`Dados de Resumo para: ${dados.nome}`);

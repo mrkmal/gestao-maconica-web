@@ -81,7 +81,7 @@
             <button onclick="showSection('menu')">Menu Principal</button>
             <button onclick="showSection('graus')">Gestão de Graus</button>
             <button onclick="showSection('irmaos')">Cadastro de Irmãos</button>
-            <button onclick="showSection('sessoes')">Registo de Sessões</button>
+            <button onclick="showSection('sessoes')">Registro de Sessões</button>
             <button onclick="showSection('relatorios')">Relatórios</button>
         </div>
 
@@ -147,9 +147,6 @@
                 <label for="data-sessao">Data da Sessão:</label>
                 <input type="date" id="data-sessao" required>
                 
-                <label for="tipo-sessao">Tipo/Nome da Sessão:</label>
-                <input type="text" id="tipo-sessao" required>
-                
                 <label for="grau-sessao-requerido">Grau da Sessão:</label>
                 <select id="grau-sessao-requerido" required>
                     <option value="">A carregar Graus...</option>
@@ -176,8 +173,7 @@
                 <thead>
                     <tr>
                         <th>Data</th>
-                        <th>Grau</th> 
-                        <th>Total de Presentes</th> 
+                        <th>Grau</th> <th>Total de Presentes</th> 
                         <th>Total de Aptos</th> 
                         <th>% de Frequência</th> 
                         <th>Ações</th> 
@@ -193,7 +189,7 @@
             <button onclick="carregarDadosEGerarRelatorio()">Gerar Relatório de Frequência</button>
             <button onclick="exportarParaPDF()" style="background-color: #dc3545;">Exportar para PDF</button>
 
-            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana 2024</h3>
+            <div id="relatorio-content"> <h3 style="text-align: center;">Augusta Loja de Perfeição Beneficência Ituana</h3>
                 <h4 style="text-align: center; margin-bottom: 20px;">Relatório de Frequência - Detalhado por Sessão</h4>
 
                 <div style="overflow-x: auto;">
@@ -458,7 +454,7 @@
         }
 
 
-        /* --- 6. MÓDULO DE REGISTO DE SESSÕES (COM CONTROLE DE GRAU) --- */
+        /* --- 6. MÓDULO DE REGISTRO DE SESSÕES (COM CONTROLE DE GRAU) --- */
         
         function popularGrausDropdownSessao() {
             carregarGraus(); 
@@ -487,7 +483,7 @@
         document.getElementById('form-sessao').addEventListener('submit', function(e) {
             e.preventDefault();
             const data = document.getElementById('data-sessao').value;
-            const tipo = document.getElementById('tipo-sessao').value;
+            const tipo = document.getElementById('tipo-sessao').value; // Mantido para salvar no DB
             const grauRequeridoNumero = parseInt(document.getElementById('grau-sessao-requerido').value, 10); 
             
             if (isNaN(grauRequeridoNumero)) {
@@ -568,7 +564,7 @@
                 
                 // Colunas
                 row.insertCell().textContent = s.data;
-                row.insertCell().textContent = nomeGrau; 
+                row.insertCell().textContent = s.grau_requerido; // (SOLICITADO: Número do Grau)
                 row.insertCell().textContent = totalPresentes;
                 row.insertCell().textContent = totalAptos;
                 row.insertCell().textContent = `${percentagem.toFixed(2)}%`; 
@@ -657,7 +653,6 @@
             exibirRelatorio(relatorio);
         }
         
-        // Função para exportar a div de conteúdo para PDF
         window.exportarParaPDF = function() {
             const element = document.getElementById('relatorio-content');
             const opt = {

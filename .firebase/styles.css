@@ -1,0 +1,35 @@
+/* Estilos de layout e login */
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+h1, h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+.section-content { 
+    background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    margin-top: 20px; max-width: 900px; margin-left: auto; margin-right: auto;
+}
+.menu-button { 
+    display: block; width: 100%; padding: 15px; margin: 10px 0;
+    background-color: #007bff; color: white; border: none; border-radius: 4px; 
+    cursor: pointer; text-align: left; font-size: 1.1em; text-decoration: none;
+}
+.menu-button:hover { background-color: #0056b3; }
+#login-screen { 
+    max-width: 400px; margin: 100px auto; padding: 20px; background-color: #fff; 
+    border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+}
+form input[type="text"], form input[type="password"], form input[type="number"], form input[type="date"], form select { 
+    width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; 
+    border-radius: 4px; box-sizing: border-box; display: block;
+}
+button { 
+    background-color: #007bff; color: white; padding: 10px 15px; 
+    border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; 
+}
+button.action-btn { margin: 5px; padding: 8px 12px; font-size: 0.9em; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background-color: #f2f2f2; }
+.tabela-frequencia td { text-align: center; }
+
+/* CSS que controla a visibilidade (Esconde o app e o login no carregamento) */
+#main-content, #login-screen { 
+    display: none; 
+}
